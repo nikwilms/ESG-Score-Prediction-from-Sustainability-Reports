@@ -27,7 +27,12 @@ The project will be successful if it is able to develop a machine learning model
 * [Yahoo API for ESG scores](https://pypi.org/project/yesg/): This module provides access to ESG scores for a variety of companies.
 * [www.responsibilityreports.com](www.responsibilityreports.com) for ESG company reports: This website provides access to ESG company reports.
 
-## Questions and Hypotheses
+## Questions
+* What are the most important factors that influence a company's ESG score?
+* Can we identify a set of common features in the sustainability reports of companies with high ESG scores?
+* Can we use NLP to extract insights from the text data in sustainability reports that may be predictive of ESG scores?
+* Can we develop a machine learning model that can accurately predict ESG scores for new companies or for companies that have not yet published a sustainability report?
+* How can we make the machine learning model more interpretable so that users can understand how it makes its predictions?
 
 ## Blockers and Challenges
 It is important to be able to interpret the machine learning model so that you can understand how it makes its predictions. This is especially important for ESG scores, as it is important to be able to explain to users why the model predicted a particular score.
