@@ -11,3 +11,5 @@ mlflow==2.4.1
 parsenvy==3.0.2
 black==23.3.0
 protobuf==4.23.3
+pdfminer.six
+PyPDF2
