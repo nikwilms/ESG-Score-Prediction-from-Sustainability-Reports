@@ -5,7 +5,14 @@ from spacy.lang.en.stop_words import STOP_WORDS
 import os
 import pandas as pd
 
-def preprocess_text_data(df, content_column_name='content', checkpoint_interval=100, checkpoint_file="preprocessing_checkpoint.parquet", max_length=2000000):
+
+def preprocess_text_data(
+    df,
+    content_column_name="content",
+    checkpoint_interval=100,
+    checkpoint_file="preprocessing_checkpoint.parquet",
+    max_length=2000000,
+):
     """
     Preprocess a DataFrame containing text data using spaCy.
 
@@ -36,22 +43,23 @@ def preprocess_text_data(df, content_column_name='content', checkpoint_interval=
         df = pd.read_parquet(checkpoint_file)
     else:
         # Preprocess and save checkpoint periodically
-        df['preprocessed_content'] = None
+        df["preprocessed_content"] = None
 
         for i, text in enumerate(df[content_column_name]):
             if i % checkpoint_interval == 0:
                 df.to_parquet(checkpoint_file)
 
             preprocessed_text = preprocess_with_spacy(text, nlp)
-            df.at[i, 'preprocessed_content'] = preprocessed_text
+            df.at[i, "preprocessed_content"] = preprocessed_text
 
         # Save the final dataframe to CSV
-        df.to_csv('preprocessed_data_text_format.csv', index=False)
+        df.to_csv("preprocessed_data_text_format.csv", index=False)
 
         # Optionally, save the dataframe as a checkpoint
         df.to_parquet(checkpoint_file)
 
     return df
+
 
 # Usage example:
 # df = pd.read_csv("your_text_data.csv")
