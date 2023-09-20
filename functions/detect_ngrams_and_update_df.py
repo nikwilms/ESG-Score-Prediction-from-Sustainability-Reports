@@ -34,10 +34,10 @@ def detect_ngrams_and_update_df(df): # df is the dataframe with the preprocessed
     trigrams = Phrases(bigram_model[tokenized_sentences], threshold=10)
     trigram_model = Phraser(trigrams)
     
-    # save models in models folder to reload later
-    #bigram_model.save("../models/ngram_models")
-    #trigram_model.save("../models/ngram_models")
-
+    # save models in new folder
+    bigram_model.save("../../models/ngram_model/bigram_model_test1")
+    trigram_model.save("../../models/ngram_model/trigram_model_test1")
+    
     # Drop the 'content' column
     df = df.drop(columns=['content'])#,inplace=True
     
