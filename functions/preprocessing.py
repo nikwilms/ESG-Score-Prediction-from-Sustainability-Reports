@@ -90,7 +90,7 @@ def preprocess_text(df, checkpoint_file="preprocessing_checkpoint.parquet", chec
             df.at[i, "preprocessed_content"] = preprocessed_text
 
         # Save the final dataframe to CSV
-        df.to_csv("preprocessed_data_text_format.csv", index=False)
+        df.to_csv("../data/preprocessed_data_text_format.csv", index=False)
 
         # Optionally, save the dataframe as a checkpoint
         df.to_parquet(checkpoint_file)
