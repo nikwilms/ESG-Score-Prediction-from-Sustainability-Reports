@@ -1,11 +1,24 @@
+<<<<<<< HEAD
+from gensim.models.phrases import Phrases, Phraser
+
+def retokenize_ngram_integration(text, bigram_model=None, trigram_model=None):
+    """
+    Integrate detected bigrams and trigrams into tokenized text.
+=======
 def preprocess_with_spacy(text, bigram_model=None, trigram_model=None):
     """
     Preprocess the given text with spaCy and integrate bigrams and trigrams.
+>>>>>>> main
     Args:
     - text (str): Input text.
     - bigram_model (gensim.models.phrases.Phraser, optional): Bigram model. Defaults to None.
     - trigram_model (gensim.models.phrases.Phraser, optional): Trigram model. Defaults to None.
     Returns:
+<<<<<<< HEAD
+    - str: Text with integrated bigrams and trigrams.
+    """
+    tokens = text.split()
+=======
     - str: Preprocessed text.
     """
     # Remove hyphens followed by line breaks
@@ -16,6 +29,7 @@ def preprocess_with_spacy(text, bigram_model=None, trigram_model=None):
     
     # Extract tokens
     tokens = [token.text for token in doc if not token.is_stop and not token.is_punct]
+>>>>>>> main
     
     # Apply bigram and trigram models, if provided
     if bigram_model:
@@ -23,6 +37,12 @@ def preprocess_with_spacy(text, bigram_model=None, trigram_model=None):
     if trigram_model:
         tokens = trigram_model[tokens]
     
+<<<<<<< HEAD
+    # Join the tokens back into a string
+    retokenized_text = " ".join(tokens)
+    
+    return retokenized_text
+=======
     # Further preprocessing
     preprocessed_tokens = []
     for token in tokens:
@@ -53,3 +73,4 @@ bigram_model, trigram_model = detect_ngrams(tokenized_reports)
 # Now you can preprocess each report with n-gram integration
 preprocessed_spacy = preprocess_with_spacy(text_snippet, bigram_model, trigram_model)
 print(preprocessed_spacy)
+>>>>>>> main
