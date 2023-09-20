@@ -13,3 +13,6 @@ black==23.3.0
 protobuf==4.23.3
 pdfminer.six
 PyPDF2
+spacy
+ray
+
