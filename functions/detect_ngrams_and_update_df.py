@@ -35,8 +35,8 @@ def detect_ngrams_and_update_df(df): # df is the dataframe with the preprocessed
     trigram_model = Phraser(trigrams)
     
     # save models in models folder to reload later
-    bigram_model.save("../../models/ngram_models")
-    trigram_model.save("../../models/ngram_models")
+    #bigram_model.save("../models/ngram_models")
+    #trigram_model.save("../models/ngram_models")
 
     # Drop the 'content' column
     df = df.drop(columns=['content'])#,inplace=True
