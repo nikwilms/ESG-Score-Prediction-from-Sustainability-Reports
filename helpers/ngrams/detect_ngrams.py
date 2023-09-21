@@ -3,11 +3,12 @@ from spacy.lang.en.stop_words import STOP_WORDS
 import re
 from gensim.models.phrases import Phrases, Phraser
 from spellchecker import SpellChecker
+import os
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-def detect_ngrams(df, min_count=5, threshold=10, model_folder="../../data/ngrams/"): # df is the dataframe with the preprocessed_content column
+def detect_ngrams(df, min_count=5, threshold=10): # df is the dataframe with the preprocessed_content column
     """
     Detect bigrams and trigrams using gensim's Phrases model.
     Args:
@@ -29,12 +30,8 @@ def detect_ngrams(df, min_count=5, threshold=10, model_folder="../../data/ngrams
     trigrams = Phrases(bigram_model[tokenized_sentences], threshold=threshold)
     trigram_model = Phraser(trigrams)
     
-    # Save the models to a folder
-    if not os.path.exists(model_folder):
-        os.makedirs(model_folder)
-    
-    bigram_model.save(os.path.join(model_folder, "bigram_model"))
-    trigram_model.save(os.path.join(model_folder, "trigram_model"))
+    bigram_model.save('../data/ngrams/bigram_model')
+    trigram_model.save('../data/ngrams/trigram_model')
     
     # Drop the 'content' column
     df.drop(columns=['content'], inplace=True)
