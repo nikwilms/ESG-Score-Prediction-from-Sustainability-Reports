@@ -1,6 +1,7 @@
 from gensim.models.phrases import Phrases, Phraser
+import os
 
-def retokenize_ngram_integration(text, bigram_model=None, trigram_model=None):
+def add_ngrams(text, bigram_model=None, trigram_model=None):
     """
     Integrate detected bigrams and trigrams into tokenized text.
     Args:
