@@ -8,7 +8,7 @@ import os
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-def detect_ngrams(df, min_count=5, threshold=10): # df is the dataframe with the preprocessed_content column
+def detect_ngrams(df, min_count=5, threshold=15): # df is the dataframe with the preprocessed_content column
     """
     Detect bigrams and trigrams using gensim's Phrases model.
     Args:
