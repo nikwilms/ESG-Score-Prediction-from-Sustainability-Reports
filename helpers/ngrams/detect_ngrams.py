@@ -7,7 +7,7 @@ from spellchecker import SpellChecker
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-def detect_ngrams(df, min_count=5, threshold=10, model_folder="../../models/ngram_model/"): # df is the dataframe with the preprocessed_content column
+def detect_ngrams(df, min_count=5, threshold=10, model_folder="../../data/ngrams/"): # df is the dataframe with the preprocessed_content column
     """
     Detect bigrams and trigrams using gensim's Phrases model.
     Args:
