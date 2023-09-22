@@ -1,99 +1,83 @@
-import ray
 import spacy
 import re
 import pandas as pd
-from spacy.lang.en.stop_words import STOP_WORDS
-import os
+import joblib
+
+# Load the spaCy model
+nlp = spacy.load("en_core_web_sm")
+nlp.max_length = 2000000
 
 
-def preprocess_text(df, checkpoint_file="preprocessing_checkpoint.parquet", checkpoint_interval=100):
+def preprocess_with_spacy(text):
     """
-    This script defines a function for preprocessing text data using spaCy and Ray. It loads a spaCy model,
-    preprocesses text in a given DataFrame, and saves the preprocessed data to a checkpoint and a CSV file.
+    Preprocesses the input text using the Spacy library.
 
-    Parameters:
-        - df (pandas.DataFrame): The input DataFrame containing the 'content'
-          column with text data.
-        - checkpoint_file (str): The name of the checkpoint file to save
-          intermediate results. Default is 'preprocessing_checkpoint.parquet'.
-        - checkpoint_interval (int): The number of records to process before
-          saving a checkpoint. Default is 100.
+    Args:
+        text (str): The input text to be preprocessed.
 
     Returns:
-        - pandas.DataFrame: A DataFrame containing the preprocessed text data in a new 'preprocessed_content' column.
-
-    Usage Example:
-
-        # Import the function
-        from preprocessing import preprocess_text
-
-        # Load or create your DataFrame
-        df = pd.read_csv('your_data.csv')
-
-        # Preprocess the text and get the preprocessed DataFrame
-        preprocessed_df = preprocess_text(df)
-
-        # Now, preprocessed_df contains the preprocessed text
-
-    Note:
-        - Make sure to have the 'en_core_web_sm' spaCy model installed. You can install it with 'python -m spacy download en_core_web_sm'.
-        - Adjust 'checkpoint_file' and 'checkpoint_interval' as needed based on your project requirements.
-        - The final preprocessed DataFrame is returned and can be used for downstream tasks.
+        tuple: A tuple containing the preprocessed text (str) and a list of named entities (list).
     """
+    # Remove hyphens followed by line breaks
+    text = re.sub(r"-(?:\n|\r\n?)", " ", text)
 
-    # Load the spaCy model
-    nlp = spacy.load("en_core_web_sm")
+    # Tokenize and process the text
+    doc = nlp(text)
 
-    # Set a higher limit based on your text length
-    nlp.max_length = 2000000
+    # Extract NER entities and store them as a list
+    ner_entities = [ent.text for ent in doc.ents]
 
-    # Define the preprocessing function
-    def preprocess_with_spacy(text):
-        # Remove hyphens followed by line breaks
-        text = re.sub(r"-(?:\n|\r\n?)", " ", text)
+    # Use list comprehension for token filtering and processing
+    preprocessed_tokens = [
+        token.lemma_.lower()
+        for token in doc
+        if not (
+            token.is_stop or token.is_punct
+        )  # Filter out stop words and punctuation
+        and token.pos_ in {"NOUN", "VERB", "ADJ"}  # Filter by POS tags
+        and len(token.lemma_) > 2  # Remove short tokens
+        and token.lemma_.isalpha()  # Remove non-alphanumeric tokens
+    ]
 
-        # Tokenize and process the text
-        doc = nlp(text)
+    # Join the preprocessed tokens into a string
+    preprocessed_text = " ".join(preprocessed_tokens)
 
-        # Use list comprehension for token filtering and processing
-        preprocessed_tokens = [
-            token.lemma_.lower()
-            for token in doc
-            if not (
-                token.is_stop or token.is_punct
-            )  # Filter out stop words and punctuation
-            and token.pos_ in {"NOUN", "VERB", "ADJ"}  # Filter by POS tags
-            and len(token.lemma_) > 2  # Remove short tokens
-            and token.lemma_.isalpha()  # Remove non-alphanumeric tokens
-        ]
+    return preprocessed_text, ner_entities
 
-        # Join the preprocessed tokens into a string
-        preprocessed_text = " ".join(preprocessed_tokens)
 
-        return preprocessed_text
+def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Preprocesses the text in the 'content' column of the input DataFrame using spaCy.
 
-    # Initialize Ray
-    ray.init()
+    Args:
+        df (pd.DataFrame): Input DataFrame containing a 'content' column with text to preprocess.
 
-    # Check if checkpoint exists, if so, load it
-    if os.path.exists(checkpoint_file):
-        df = pd.read_parquet(checkpoint_file)
-    else:
-        # Preprocess and save checkpoint periodically
-        df["preprocessed_content"] = None
+    Returns:
+        pd.DataFrame: Output DataFrame with preprocessed text in a new 'preprocessed_content' column and NER entities in a new 'ner_entities' column. The DataFrame is also saved to a CSV file at '../../data/preprocessed_text_with_ner.csv'.
+    """
+    # Initialize joblib for parallel processing
+    num_cores = joblib.cpu_count()
+    parallel = joblib.Parallel(n_jobs=num_cores, backend="multiprocessing")
 
-        for i, text in enumerate(df["content"]):
-            if i % checkpoint_interval == 0:
-                df.to_parquet(checkpoint_file)
+    # Use joblib to parallelize the preprocessing step
+    results = parallel(
+        joblib.delayed(preprocess_with_spacy)(text) for text in df["content"]
+    )
 
-            preprocessed_text = preprocess_with_spacy(text)
-            df.at[i, "preprocessed_content"] = preprocessed_text
+    # Unpack the results
+    preprocessed_texts, ner_entities_list = zip(*results)
 
-        # Save the final dataframe to CSV
-        df.to_csv("../data/preprocessed_data_text_format.csv", index=False)
+    # Add the preprocessed texts to the DataFrame
+    df["preprocessed_content"] = preprocessed_texts
 
-        # Optionally, save the dataframe as a checkpoint
-        df.to_parquet(checkpoint_file)
+    # Add the NER entities as a new column
+    df["ner_entities"] = ner_entities_list
 
-    # Return the preprocessed DataFrame
+    # Save the final dataframe to CSV
+    df.to_csv("../../data/preprocessed_text_with_ner.csv", index=False)
+
     return df
+
+
+# Example usage:
+# preprocessed_df = preprocess_text(df)
