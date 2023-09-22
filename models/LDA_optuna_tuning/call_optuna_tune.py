@@ -18,7 +18,7 @@ def call_optuna_tune(n_trials=50):
         dict: Dictionary containing best parameters, best coherence score, and pyLDAvis visualization.
     """
     # Set the Optuna logging level to INFO
-    optuna.logging.set_verbosity(optuna.logging.DEBUG)
+    optuna.logging.set_verbosity(optuna.logging.INFO)
     # Create a study object and specify the direction is 'maximize'
     study = optuna.create_study(direction="maximize")
 
