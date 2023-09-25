@@ -1,5 +1,3 @@
-# Data Pipeline
-
 from helpers.text_preprocessing.preprocess_text import preprocess_text
 from helpers.text_preprocessing.add_spelling_correction import add_spelling_correction
 from helpers.ngrams.detect_ngrams import detect_ngrams
@@ -16,13 +14,13 @@ def data_pipeline():
     df = pd.read_csv('../data/extracted_text_sustainability_reports.csv')
 
     # Stage 1: Text Preprocessing
-    df["preprocessed_content"] = df["content"].apply(preprocess_text)
+    df = preprocess_text(df)  # Note that we're directly passing the DataFrame
 
-   # Stage 2: Adding spelling correction
+    # Stage 2: Adding spelling correction
     df["preprocessed_content"] = df["preprocessed_content"].apply(add_spelling_correction)
 
     # Stage 3: Detect ngrams
-    df = detect_ngrams(df)[0]
+    df, _ = detect_ngrams(df)  # Assuming detect_ngrams returns DataFrame as first element in a tuple
 
     # Stage 4: Adding ngrams
     df["preprocessed_content"] = df["preprocessed_content"].apply(add_ngrams)
