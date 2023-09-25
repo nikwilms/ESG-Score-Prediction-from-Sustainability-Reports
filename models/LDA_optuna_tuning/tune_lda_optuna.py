@@ -1,69 +1,69 @@
+from sklearn.model_selection import KFold
+import optuna
 import gensim
-from gensim import corpora
-from gensim.models import CoherenceModel
-import pandas as pd
+from gensim.models.coherencemodel import CoherenceModel
 import logging
+import numpy as np
 
-logging.basicConfig(level=logging.DEBUG)  # Set the logging level to DEBUG
 
-
-def objective(trial):
-    """
-    An objective function for LDA topic modeling.
-
-    Args:
-        trial: A Trial object from Optuna.
-
-    Returns:
-        The coherence score of the LDA model, corpus and dictionary.
-    """
-
-    # Read CSV into a DataFrame
-    df = pd.read_csv("../data/lda_test_df.csv") 
-    logging.info(f"Trial {trial.number} started")
-
-    # Tokenize the 'preprocessed_content' column
-    tokenized_data = df["preprocessed_content"].apply(lambda x: x.split())
-
-    # Create a Gensim dictionary from the tokenized data
-    dictionary = corpora.Dictionary(tokenized_data)
-
-    # Filter extremes
-    dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=None)
-
-    # Recreate the corpus using the filtered dictionary
-    corpus = [dictionary.doc2bow(text) for text in tokenized_data]
-
-    '''    # Create a corpus from the dictionary
-    corpus = [dictionary.doc2bow(text) for text in tokenized_data]
-
-    # No_below: Tokens that appear in less than 5 documents are filtered out.
-    # No_above: Tokens that appear in more than 50% of the total corpus are also removed as default.
-    # Keep_n: We limit ourselves to the top 1000 most frequent tokens (default is 100.000). Set to ‘None’ if you want to keep all.
-    dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=None)'''
-
-    # Suggest hyperparameters
-    alpha = trial.suggest_float("alpha", 0.01, 1)
-    eta = trial.suggest_float("eta", 0.01, 1)
-    ntopics = trial.suggest_int("num_topics", 10, 50)
-
-    # Train the LDA model
+# Placeholder function for LDA training
+def train_lda(corpus, id2word, num_topics, alpha, eta):
     model = gensim.models.LdaMulticore(
-        workers=7,
         corpus=corpus,
-        id2word=dictionary,
-        num_topics=ntopics,
-        random_state=100,
-        passes=5,
+        id2word=id2word,
+        num_topics=num_topics,
         alpha=alpha,
         eta=eta,
+        random_state=100,
+        passes=5,
     )
+    return model
 
-    # Calculate coherence score
-    coherence_model_lda = CoherenceModel(
-        model=model, texts=tokenized_data, dictionary=dictionary, coherence="c_v"
+
+# Coherence computation
+def compute_coherence(model, corpus, dictionary):
+    coherence_model = CoherenceModel(
+        model=model, texts=corpus, dictionary=dictionary, coherence="c_v"
     )
-    coherence_lda = coherence_model_lda.get_coherence()
+    coherence = coherence_model.get_coherence()
 
-    # Return coherence score
-    return coherence_lda, corpus, dictionary
+    # DEBUGGING
+    # print(f"Coherence: {coherence}, Model Params: {model.alpha}, {model.eta}, {model.num_topics}")
+    return coherence
+
+
+# K-Fold Cross-Validation
+def cross_val_coherence(corpus, dictionary, num_topics, alpha, eta, k=5):
+    kf = KFold(n_splits=k)
+    avg_coherence = 0.0
+
+    for train_idx, test_idx in kf.split(corpus):
+        train_corpus = [corpus[i] for i in train_idx]
+        model = train_lda(train_corpus, dictionary, num_topics, alpha, eta)
+        avg_coherence += compute_coherence(model, train_corpus, dictionary)
+
+    return avg_coherence / k
+
+
+def objective(trial, corpus, dictionary):
+    print("Sample from corpus:", corpus[:1])
+    print("Sample from dictionary:", list(dictionary.items())[:5])
+
+    alpha = trial.suggest_float("alpha", 0.01, 1)
+    eta = trial.suggest_float("eta", 0.01, 1)
+    num_topics = trial.suggest_int("num_topics", 10, 50)
+
+    print(
+        f"Trying parameters: alpha={alpha}, eta={eta}, num_topics={num_topics}"
+    )  # Debugging line
+
+    model = train_lda(corpus, dictionary, num_topics, alpha, eta)
+    coherence_score = compute_coherence(model, corpus, dictionary)
+
+    if not coherence_score or np.isnan(coherence_score) or np.isinf(coherence_score):
+        print(
+            f"Invalid coherence_score: {coherence_score} for alpha={alpha}, eta={eta}, num_topics={num_topics}"
+        )
+        # raise optuna.exceptions.TrialPruned()
+
+    return coherence_score

@@ -1,60 +1,70 @@
-import optuna
 import pyLDAvis.gensim_models as gensimvis
-import plotly
-from gensim.models import LdaModel
-import gensim
-from models.LDA_optuna_tuning.tune_lda_optuna import objective
+import optuna.visualization as vis
+import optuna
+import pyLDAvis
+from gensim import corpora
+import logging
+
+# import functions
+from models.LDA_optuna_tuning.tune_lda_optuna import (
+    train_lda,
+    objective,
+)
 
 
-def call_optuna_tune(n_trials=50):
-    """
-    Tune hyperparameters for LDA model using Optuna.
+def preprocess_data(df):
+    # Tokenize the 'preprocessed_content' column
+    tokenized_data = df["preprocessed_content"].apply(lambda x: x.split())
 
-    Args:
-        df (DataFrame): DataFrame containing the 'preprocessed_content' column.
-        n_trials (int): Number of trials for Optuna optimization. Default is 50.
+    # DEBUGGING
+    # print("Sample tokenized data:", tokenized_data[:2])
 
-    Returns:
-        dict: Dictionary containing best parameters, best coherence score, and pyLDAvis visualization.
-    """
-    # Set the Optuna logging level to INFO
-    optuna.logging.set_verbosity(optuna.logging.INFO)
-    # Create a study object and specify the direction is 'maximize'
+    # Create a Gensim dictionary from the tokenized data
+    dictionary = corpora.Dictionary(tokenized_data)
+
+    # Filter extremes
+    # dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=None)
+
+    # Create the corpus
+    corpus = [dictionary.doc2bow(text) for text in tokenized_data]
+
+    # DEBUGGING
+    # print("Sample corpus data:", corpus[:2])
+    # print("Dictionary:", list(dictionary.items())[:10])
+
+    return corpus, dictionary
+
+
+def execute_optuna_study(df, n_trials=10):
+    corpus, dictionary = preprocess_data(df)
+
     study = optuna.create_study(direction="maximize")
 
-    # Optimize the study
-    study.optimize(objective, n_trials=n_trials)
+    # DEBUGGING
+    print(f"First element of corpus: {corpus[0]}")
+    print(f"Length of dictionary: {len(dictionary)}")
+    study.optimize(lambda trial: objective(trial, corpus, dictionary), n_trials=5)
 
-    # Get the best parameters and best score
-    best_params = study.best_params
-    best_score = study.best_value
+    """ study.optimize(
+        lambda trial: objective(trial, corpus, dictionary), n_trials=n_trials
+    )"""
 
-    corpus = study.best_trial.values[1]
-    dictionary = study.best_trial.values[2]
+    logger = logging.getLogger(__name__)
+    logger.info(f"Best trial: {study.best_trial.number}")
+    logger.info(f"Best trial params: {study.best_trial.params}")
 
-    # Train the LDA model with the best parameters
-    lda_model = gensim.models.LdaMulticore(
-        workers=7,
-        corpus=corpus,
-        id2word=dictionary,
-        num_topics=study.best_trial.params["num_topics"],
-        alpha=study.best_trial.params["alpha"],
-        eta=study.best_trial.params["eta"],
-    )
+    # Retrieve the best model
+    best_params = study.best_trial.params
+    best_model = train_lda(corpus, dictionary, **best_params)
 
     # Create pyLDAvis visualization
-    lda_display = gensimvis.prepare(lda_model, corpus, dictionary)
+    lda_display = gensimvis.prepare(best_model, corpus, dictionary)
+    pyLDAvis.show(lda_display)  # This will open a web browser
 
     # Create contour plot
-    contour_plot = optuna.visualization.plot_contour(study)
+    contour_plot = vis.plot_contour(study)
+    contour_plot.show()
 
     # Create parameter importances plot
-    param_importances_plot = optuna.visualization.plot_param_importances(study)
-
-    return {
-        "best_params": best_params,
-        "best_score": best_score,
-        "pyLDAvis": lda_display,
-        "contour_plot": contour_plot,
-        "param_importances_plot": param_importances_plot,
-    }
+    param_importances_plot = vis.plot_param_importances(study)
+    param_importances_plot.show()
