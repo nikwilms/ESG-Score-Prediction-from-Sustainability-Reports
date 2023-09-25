@@ -4,6 +4,7 @@ import optuna
 import pyLDAvis
 from gensim import corpora
 import logging
+import mlflow
 
 # import functions
 from models.LDA_optuna_tuning.tune_lda_optuna import (
@@ -13,58 +14,90 @@ from models.LDA_optuna_tuning.tune_lda_optuna import (
 
 
 def preprocess_data(df):
+    """
+    Preprocess the DataFrame to produce a Gensim dictionary and corpus.
+
+    Args:
+    - df (DataFrame): DataFrame containing the 'preprocessed_content' column.
+
+    Returns:
+    - corpus (list): Bag-of-words representation of the documents.
+    - dictionary (Dictionary): Gensim dictionary mapping of id to word.
+    - tokenized_data (list): List of tokenized texts.
+    """
     # Tokenize the 'preprocessed_content' column
     tokenized_data = df["preprocessed_content"].apply(lambda x: x.split())
-
-    # DEBUGGING
-    # print("Sample tokenized data:", tokenized_data[:2])
 
     # Create a Gensim dictionary from the tokenized data
     dictionary = corpora.Dictionary(tokenized_data)
 
-    # Filter extremes
-    # dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=None)
+    # Filter out words that occur less than 10 documents, or more than 50% of the documents
+    dictionary.filter_extremes(no_below=10, no_above=0.5)
 
     # Create the corpus
     corpus = [dictionary.doc2bow(text) for text in tokenized_data]
 
-    # DEBUGGING
-    # print("Sample corpus data:", corpus[:2])
-    # print("Dictionary:", list(dictionary.items())[:10])
+    # Filter out empty documents
+    corpus = [doc for doc in corpus if doc]
 
-    return corpus, dictionary
+    return corpus, dictionary, tokenized_data
 
 
 def execute_optuna_study(df, n_trials=10):
-    corpus, dictionary = preprocess_data(df)
+    """
+    Execute Optuna study for hyperparameter tuning of the LDA model.
 
-    study = optuna.create_study(direction="maximize")
+    Args:
+    - df (DataFrame): DataFrame containing the 'preprocessed_content' column.
+    - n_trials (int): Number of trials for Optuna optimization.
 
-    # DEBUGGING
-    print(f"First element of corpus: {corpus[0]}")
-    print(f"Length of dictionary: {len(dictionary)}")
-    study.optimize(lambda trial: objective(trial, corpus, dictionary), n_trials=5)
+    Returns:
+    - None: Function executes the Optuna study and generates visualizations.
+    """
+    # Start an MLflow run
+    with mlflow.start_run(run_name="Optuna_Study") as parent_run:
+        # Initialize MLflow Optuna store
+        mlflow_storage = f"sqlite:///mlflow.db"
 
-    """ study.optimize(
-        lambda trial: objective(trial, corpus, dictionary), n_trials=n_trials
-    )"""
+        # Preprocessing data and getting corpus, dictionary, and tokenized texts
+        corpus, dictionary, tokenized_texts = preprocess_data(df)
 
-    logger = logging.getLogger(__name__)
-    logger.info(f"Best trial: {study.best_trial.number}")
-    logger.info(f"Best trial params: {study.best_trial.params}")
+        # Creating an Optuna study object and specifying the direction is 'maximize'.
+        study = optuna.create_study(
+            direction="maximize",
+            storage=mlflow_storage,
+        )
 
-    # Retrieve the best model
-    best_params = study.best_trial.params
-    best_model = train_lda(corpus, dictionary, **best_params)
+        # Optimizing the study, the objective function is passed in as the first argument.
+        study.optimize(
+            lambda trial: objective(trial, corpus, dictionary, tokenized_texts),
+            n_trials=n_trials,
+        )
 
-    # Create pyLDAvis visualization
-    lda_display = gensimvis.prepare(best_model, corpus, dictionary)
-    pyLDAvis.show(lda_display)  # This will open a web browser
+        # Retrieve best model parameters
+        best_params = study.best_trial.params
+        best_model = train_lda(corpus, dictionary, **best_params)
 
-    # Create contour plot
-    contour_plot = vis.plot_contour(study)
-    contour_plot.show()
+        # Log the best parameters to MLflow
+        mlflow.log_params(study.best_trial.params)
 
-    # Create parameter importances plot
-    param_importances_plot = vis.plot_param_importances(study)
-    param_importances_plot.show()
+        # Use MLflow's API to save the best model
+        mlflow.sklearn.log_model(best_model, "best_lda_model")
+
+        # Create a pyLDAvis visualization
+        lda_display = gensimvis.prepare(best_model, corpus, dictionary)
+        pyLDAvis.show(lda_display)
+
+        # Save the pyLDAvis visualization to HTML
+        pyLDAvis.save_html(lda_display, "lda.html")
+
+        # Log the file to MLflow
+        mlflow.log_artifact("lda.html")
+
+        # Create a contour plot
+        contour_plot = vis.plot_contour(study)
+        contour_plot.show()
+
+        # Create a parameter importance plot
+        param_importances_plot = vis.plot_param_importances(study)
+        param_importances_plot.show()
