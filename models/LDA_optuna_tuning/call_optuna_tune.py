@@ -5,6 +5,8 @@ import pyLDAvis
 from gensim import corpora
 import logging
 import mlflow
+from optuna.pruners import MedianPruner
+
 
 # import functions
 from models.LDA_optuna_tuning.tune_lda_optuna import (
@@ -62,10 +64,14 @@ def execute_optuna_study(df, n_trials=10):
         # Preprocessing data and getting corpus, dictionary, and tokenized texts
         corpus, dictionary, tokenized_texts = preprocess_data(df)
 
+        # Configure the median pruner
+        pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=5, interval_steps=1)
+
         # Creating an Optuna study object and specifying the direction is 'maximize'.
         study = optuna.create_study(
             direction="maximize",
             storage=mlflow_storage,
+            pruner=pruner,
         )
 
         # Optimizing the study, the objective function is passed in as the first argument.
