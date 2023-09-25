@@ -17,10 +17,10 @@ def data_pipeline():
     df = preprocess_text(df)  # Note that we're directly passing the DataFrame
 
     # Stage 2: Adding spelling correction
-    df["preprocessed_content"] = df["preprocessed_content"].apply(add_spelling_correction)
+    df = add_spelling_correction(df, output_folder='../data/')  # Note that we're directly passing the DataFrame
 
     # Stage 3: Detect ngrams
-    df, _ = detect_ngrams(df)  # Assuming detect_ngrams returns DataFrame as first element in a tuple
+    df, *_ = detect_ngrams(df)  # Assuming detect_ngrams returns DataFrame as first element in a tuple
 
     # Stage 4: Adding ngrams
     df["preprocessed_content"] = df["preprocessed_content"].apply(add_ngrams)
