@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 
-def spell_check_df(df, output_folder="../../data/"):
+def add_spelling_correction(df, output_folder="../../data/"):
     """
     Perform spell checking on the 'preprocessed_content' column of the DataFrame.
     Args:
