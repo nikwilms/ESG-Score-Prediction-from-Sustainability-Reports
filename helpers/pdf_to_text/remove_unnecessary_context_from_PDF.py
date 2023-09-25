@@ -238,4 +238,3 @@ def process_pdfs_in_directory(directory, output_csv):
                     _, ticker, year = file.rstrip('.pdf').split('_')
                     writer.writerow({'filename': file, 'ticker': ticker, 'year': year, 'content': content})
 
-process_pdfs_in_directory('/Users/neuefische/Downloads/test_ESG/text_only_pdfs', '../../data/extracted_text_sustainability_reports.csv')

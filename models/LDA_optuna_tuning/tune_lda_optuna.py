@@ -19,7 +19,7 @@ def objective(trial):
     """
 
     # Read CSV into a DataFrame
-    df = pd.read_csv("../data/lda_test_df.csv")
+    df = pd.read_csv("../data/lda_test_df.csv") 
     logging.info(f"Trial {trial.number} started")
 
     # Tokenize the 'preprocessed_content' column
