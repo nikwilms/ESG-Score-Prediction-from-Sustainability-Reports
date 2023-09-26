@@ -198,4 +198,3 @@ y-py==0.6.0
 ypy-websocket==0.8.4
 zipp==3.16.2
 blinker==1.4
-```
