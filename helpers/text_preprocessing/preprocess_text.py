@@ -18,8 +18,8 @@ def preprocess_with_spacy(text):
         tuple: A tuple containing the preprocessed text (str) and a list of named entities (list).
     """
     # DEBUGGING
-    print(f"Inside preprocess_with_spacy, type of text: {type(text)}")
-    print(f"First 50 characters of text: {text[:50]}")
+    #print(f"Inside preprocess_with_spacy, type of text: {type(text)}")
+    #print(f"First 50 characters of text: {text[:50]}")
 
     # Remove hyphens followed by line breaks
     text = re.sub(r"-(?:\n|\r\n?)", " ", text)
@@ -76,7 +76,7 @@ def preprocess_text(df):
     df["ner_entities"] = ner_entities_list
 
     # Save the final dataframe to CSV
-    df.to_csv("../../data/preprocessed_text_with_ner.csv", index=False)
+    df.to_csv("../data/preprocessed_text_with_ner.csv", index=False)
 
     return df
 
