@@ -63,7 +63,7 @@ def execute_optuna_study(df, n_trials=10):
     # Start an MLflow run
     with mlflow.start_run(run_name="Optuna_Study") as parent_run:
         # Initialize MLflow Optuna store
-        mlflow_storage = f"sqlite:///mlflow.db"
+        mlflow_storage = "sqlite:///../data/mlflow/mlflow.db"
 
         # Preprocessing data and getting corpus, dictionary, and tokenized texts
         corpus, dictionary, tokenized_texts = preprocess_data(df)
@@ -92,22 +92,27 @@ def execute_optuna_study(df, n_trials=10):
         mlflow.log_params(study.best_trial.params)
 
         # Use MLflow's API to save the best model
-        mlflow.sklearn.log_model(best_model, "best_lda_model")
+        best_model_path = "../data/lda/best_lda_model"
+        best_model.save(best_model_path)
+        mlflow.log_artifact(best_model_path)
 
         # Create a pyLDAvis visualization
         lda_display = gensimvis.prepare(best_model, corpus, dictionary)
-        pyLDAvis.show(lda_display)
+        # pyLDAvis.show(lda_display)
 
         # Save the pyLDAvis visualization to HTML
-        pyLDAvis.save_html(lda_display, "lda.html")
+        lda_html_path = "../data/lda/lda.html"
+        pyLDAvis.save_html(lda_display, lda_html_path)
 
         # Log the file to MLflow
-        mlflow.log_artifact("lda.html")
+        mlflow.log_artifact(lda_html_path)
 
-        # Create a contour plot
+        # Create a contour plot (assuming 'vis' is already imported and functional)
         contour_plot = vis.plot_contour(study)
         contour_plot.show()
 
         # Create a parameter importance plot
         param_importances_plot = vis.plot_param_importances(study)
         param_importances_plot.show()
+
+        return best_model, corpus, dictionary
