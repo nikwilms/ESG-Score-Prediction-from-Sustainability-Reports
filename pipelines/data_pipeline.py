@@ -5,7 +5,7 @@ from helpers.ngrams.add_ngrams import add_ngrams
 from helpers.pdf_to_text.remove_unnecessary_context_from_PDF import process_pdfs_in_directory
 import pandas as pd
 
-def data_pipeline(input_path, output_path):
+def data_pipeline(input_path, output_path='../data/extracted_text_sustainability_reports.csv'):
     
     # Stage 0: 
     process_pdfs_in_directory(input_path, '../data/extracted_text_sustainability_reports.csv')
