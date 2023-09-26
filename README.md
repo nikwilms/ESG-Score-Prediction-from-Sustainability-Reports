@@ -18,6 +18,7 @@ Disclose their ESG performance in a transparent and comprehensive way. The ESG s
 * Feature engineering
 * Data Visualization
 * Exploratory Data Analysis
+* Topic Modelling
 * Natural language processing (NLP)
 
 ## Project Overview
