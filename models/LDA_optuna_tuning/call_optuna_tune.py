@@ -42,10 +42,6 @@ def preprocess_data(df):
     # Filter out empty documents
     corpus = [doc for doc in corpus if doc]
 
-    print(len(corpus))
-    print(corpus[:5])
-    print(len(dictionary))
-
     return corpus, dictionary, tokenized_data
 
 

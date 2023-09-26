@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-def merge_dataframes(df1, df2, output_dir="../../data/model_data"):
+def merge_dataframes(df1, df2, output_dir="../data/model_data"):
     """
     Merges two dataframes on the 'ticker' and 'year' columns. 
     Returns the merged dataframe and lists of unmatched rows from both dataframes.
@@ -9,11 +9,14 @@ def merge_dataframes(df1, df2, output_dir="../../data/model_data"):
     """
     
     # Merge the dataframes on 'ticker' and 'year'
-    model_data = pd.merge(df1, df2, left_on=['ticker', 'year'], right_on=['company_symbol', 'year'], how='inner')
+    model_data = pd.merge(df1, df2, left_on=['ticker', 'year'], right_on=['Company_Symbol', 'year'], how='inner')
+    
+    # Process column headers: lowercase and replace dashes with underscores
+    model_data.columns = [col.lower().replace('-', '_') for col in model_data.columns]
     
     # Find unmatched rows
     unmatched_report_data = df1[~df1.ticker.isin(model_data.ticker)]
-    unmatched_ESG_scores = df2[~df2.company_symbol.isin(model_data.company_symbol)]
+    unmatched_ESG_scores = df2[~df2.Company_Symbol.isin(model_data.company_symbol)]
     
     # Create the output directory if it doesn't exist
     if not os.path.exists(output_dir):
@@ -25,4 +28,3 @@ def merge_dataframes(df1, df2, output_dir="../../data/model_data"):
     unmatched_ESG_scores.to_csv(os.path.join(output_dir, "unmatched_ESG_scores.csv"), index=True)
 
     return model_data, unmatched_report_data, unmatched_ESG_scores
-
