@@ -7,7 +7,6 @@ import joblib
 nlp = spacy.load("en_core_web_sm")
 nlp.max_length = 2000000
 
-
 def preprocess_with_spacy(text):
     """
     Preprocesses the input text using the Spacy library.
@@ -18,6 +17,10 @@ def preprocess_with_spacy(text):
     Returns:
         tuple: A tuple containing the preprocessed text (str) and a list of named entities (list).
     """
+    # DEBUGGING
+    #print(f"Inside preprocess_with_spacy, type of text: {type(text)}")
+    #print(f"First 50 characters of text: {text[:50]}")
+
     # Remove hyphens followed by line breaks
     text = re.sub(r"-(?:\n|\r\n?)", " ", text)
 
@@ -44,8 +47,7 @@ def preprocess_with_spacy(text):
 
     return preprocessed_text, ner_entities
 
-
-def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
+def preprocess_text(df):
     """
     Preprocesses the text in the 'content' column of the input DataFrame using spaCy.
 
@@ -53,7 +55,7 @@ def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
         df (pd.DataFrame): Input DataFrame containing a 'content' column with text to preprocess.
 
     Returns:
-        pd.DataFrame: Output DataFrame with preprocessed text in a new 'preprocessed_content' column and NER entities in a new 'ner_entities' column. The DataFrame is also saved to a CSV file at '../../data/preprocessed_text_with_ner.csv'.
+        pd.DataFrame: Output DataFrame with preprocessed text in a new 'preprocessed_content' column and NER entities in a new 'ner_entities' column.
     """
     # Initialize joblib for parallel processing
     num_cores = joblib.cpu_count()
@@ -74,10 +76,9 @@ def preprocess_text(df: pd.DataFrame) -> pd.DataFrame:
     df["ner_entities"] = ner_entities_list
 
     # Save the final dataframe to CSV
-    df.to_csv("../../data/preprocessed_text_with_ner.csv", index=False)
+    df.to_csv("../data/preprocessed_text_with_ner.csv", index=False)
 
     return df
-
 
 # Example usage:
 # preprocessed_df = preprocess_text(df)

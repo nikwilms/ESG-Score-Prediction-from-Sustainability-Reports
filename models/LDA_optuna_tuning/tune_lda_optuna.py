@@ -1,69 +1,129 @@
+from sklearn.model_selection import KFold
+import optuna
 import gensim
-from gensim import corpora
 from gensim.models import CoherenceModel
-import pandas as pd
 import logging
+import numpy as np
+import warnings
+import mlflow
 
-logging.basicConfig(level=logging.DEBUG)  # Set the logging level to DEBUG
+
+# Note:
+# - 'corpus' is a numerical representation used for training the LDA model.
+# - 'tokenized_texts' contains the actual words and is used for computing coherence.
+# Train the LDA model with 'corpus' but compute coherence using 'tokenized_texts'.
 
 
-def objective(trial):
+# Placeholder function for LDA training
+def train_lda(corpus, id2word, num_topics, alpha, eta):
     """
-    An objective function for LDA topic modeling.
+    Train an LDA model on the given corpus.
 
     Args:
-        trial: A Trial object from Optuna.
+    - corpus (list): Bag-of-words representation of the documents.
+    - id2word (Dictionary): Gensim dictionary mapping of id to word.
+    - num_topics (int): Number of topics to be extracted from the training corpus.
+    - alpha (float): Hyperparameter for LDA model.
+    - eta (float): Hyperparameter for LDA model.
 
     Returns:
-        The coherence score of the LDA model, corpus and dictionary.
+    - model (LdaMulticore): Trained LDA model.
     """
 
-    # Read CSV into a DataFrame
-    df = pd.read_csv("../data/lda_test_df.csv") 
-    logging.info(f"Trial {trial.number} started")
-
-    # Tokenize the 'preprocessed_content' column
-    tokenized_data = df["preprocessed_content"].apply(lambda x: x.split())
-
-    # Create a Gensim dictionary from the tokenized data
-    dictionary = corpora.Dictionary(tokenized_data)
-
-    # Filter extremes
-    dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=None)
-
-    # Recreate the corpus using the filtered dictionary
-    corpus = [dictionary.doc2bow(text) for text in tokenized_data]
-
-    '''    # Create a corpus from the dictionary
-    corpus = [dictionary.doc2bow(text) for text in tokenized_data]
-
-    # No_below: Tokens that appear in less than 5 documents are filtered out.
-    # No_above: Tokens that appear in more than 50% of the total corpus are also removed as default.
-    # Keep_n: We limit ourselves to the top 1000 most frequent tokens (default is 100.000). Set to ‘None’ if you want to keep all.
-    dictionary.filter_extremes(no_below=15, no_above=0.5, keep_n=None)'''
-
-    # Suggest hyperparameters
-    alpha = trial.suggest_float("alpha", 0.01, 1)
-    eta = trial.suggest_float("eta", 0.01, 1)
-    ntopics = trial.suggest_int("num_topics", 10, 50)
-
-    # Train the LDA model
     model = gensim.models.LdaMulticore(
-        workers=7,
         corpus=corpus,
-        id2word=dictionary,
-        num_topics=ntopics,
-        random_state=100,
-        passes=5,
+        id2word=id2word,
+        num_topics=num_topics,
         alpha=alpha,
         eta=eta,
+        random_state=100,
+        passes=3,
+        dtype=np.float64,
     )
+    return model
 
-    # Calculate coherence score
-    coherence_model_lda = CoherenceModel(
-        model=model, texts=tokenized_data, dictionary=dictionary, coherence="c_v"
+
+def compute_coherence(model, tokenized_texts, dictionary):
+    """
+    Compute the coherence score of the given LDA model.
+
+    Args:
+    - model (LdaMulticore): Trained LDA model.
+    - tokenized_texts (list): List of tokenized texts.
+    - dictionary (Dictionary): Gensim dictionary mapping.
+
+    Returns:
+    - float: Coherence score.
+    """
+
+    coherence_model = CoherenceModel(
+        model=model, texts=tokenized_texts, dictionary=dictionary, coherence="c_v"
     )
-    coherence_lda = coherence_model_lda.get_coherence()
+    coherence = coherence_model.get_coherence()
+    return coherence
 
-    # Return coherence score
-    return coherence_lda, corpus, dictionary
+
+def cross_val_coherence(
+    corpus, dictionary, tokenized_texts, num_topics, alpha, eta, k=5
+):
+    """
+    Perform k-fold cross-validation on the given corpus and return the average coherence score.
+
+    Args:
+    - corpus (list): Bag-of-words representation of the documents.
+    - dictionary (Dictionary): Gensim dictionary mapping of id to word.
+    - tokenized_texts (list): List of tokenized texts.
+    - num_topics (int): Number of topics to be extracted from the training corpus.
+    - alpha (float): Hyperparameter for LDA model.
+    - eta (float): Hyperparameter for LDA model.
+    - k (int): Number of folds in k-fold cross-validation.
+
+    Returns:
+    - float: Average coherence score.
+    """
+
+    kf = KFold(n_splits=k)
+    avg_coherence = 0.0
+
+    for train_idx, _ in kf.split(corpus):  # Ignore test_idx
+        train_corpus = [corpus[i] for i in train_idx]
+        model = train_lda(train_corpus, dictionary, num_topics, alpha, eta)
+        avg_coherence += compute_coherence(model, tokenized_texts, dictionary)
+
+    return avg_coherence / k
+
+
+# Optuna objective function
+def objective(trial, corpus, dictionary, tokenized_texts):
+    """
+    Objective function for Optuna hyperparameter optimization.
+
+    Args:
+    - trial (Trial): Optuna trial object.
+    - corpus (list): Bag-of-words representation of the documents.
+    - dictionary (Dictionary): Gensim dictionary mapping of id to word.
+    - tokenized_texts (list): List of tokenized texts.
+
+    Returns:
+    - float: Coherence score of the trial.
+    """
+    with mlflow.start_run(run_name=f"Trial_{trial.number}", nested=True) as nested_run:
+        alpha = trial.suggest_float("alpha", 0.01, 1)
+        eta = trial.suggest_float("eta", 0.01, 1)
+        num_topics = trial.suggest_int("num_topics", 10, 50)
+
+        model = train_lda(corpus, dictionary, num_topics, alpha, eta)
+        coherence_score = compute_coherence(model, tokenized_texts, dictionary)
+
+        # Report the coherence score, assuming this is done at step 1 (modify as needed)
+        trial.report(coherence_score, step=1)
+
+        # Check for pruning
+        if trial.should_prune():
+            raise optuna.TrialPruned()
+
+        # Log parameters and metrics to the existing MLflow run
+        mlflow.log_params(trial.params)
+        mlflow.log_metric("coherence_score", coherence_score)
+
+        return coherence_score
