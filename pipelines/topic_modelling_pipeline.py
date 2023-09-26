@@ -12,25 +12,23 @@ def topic_modelling_pipeline(df):
 
 # Stage 1 - Generate TF-IDF matrix
 
-    tfidf_matrix = generate_tfidf(df)
+    #tfidf_matrix = create_tfidf(df)
 
 # Stage 2 - Generate DTM matrix
 
-    dtm_matrix = generate_dtm(df)
+   # dtm_matrix = generate_dtm(df)
 
 # Stage 3 - Call optuna tune
 
-    optuna_tune = call_optuna_tune()
+    optuna_tune = execute_optuna_study()
 
 #  Stage 4.1 - Call NMF (with tfidf)
 
-    W_tfidf, H_tfid, feature_names_tfidf = perform_nmf(tfidf_matrix, n_topics=5, n_top_words=10)
+   # W_tfidf, H_tfid, feature_names_tfidf = perform_nmf(tfidf_matrix, n_topics=5, n_top_words=10)
 
 # Stage 4.2 - Call NMF (with dtm)
 
-    W_dtm, H_dtm, feature_names_dtm = perform_nmf(dtm_matrix, n_topics=5, n_top_words=10)
-
-return optuna_tune, W_tfidf, H_tfid, feature_names_tfidf, W_dtm, H_dtm, feature_names_dtm
+    #W_dtm, H_dtm, feature_names_dtm = perform_nmf(dtm_matrix, n_topics=5, n_top_words=10)
 
 # Stage 5 - merge all results into one dataframe
 
