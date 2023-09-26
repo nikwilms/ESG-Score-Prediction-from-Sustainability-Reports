@@ -115,6 +115,13 @@ def objective(trial, corpus, dictionary, tokenized_texts):
         model = train_lda(corpus, dictionary, num_topics, alpha, eta)
         coherence_score = compute_coherence(model, tokenized_texts, dictionary)
 
+        # Report the coherence score, assuming this is done at step 1 (modify as needed)
+        trial.report(coherence_score, step=1)
+
+        # Check for pruning
+        if trial.should_prune():
+            raise optuna.TrialPruned()
+
         # Log parameters and metrics to the existing MLflow run
         mlflow.log_params(trial.params)
         mlflow.log_metric("coherence_score", coherence_score)
