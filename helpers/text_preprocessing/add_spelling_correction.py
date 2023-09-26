@@ -2,6 +2,7 @@ from spellchecker import SpellChecker
 import pandas as pd
 import os
 
+
 def add_spelling_correction(df, output_folder="../../data/"):
     """
     Perform spell checking on the 'preprocessed_content' column of the DataFrame.
@@ -16,7 +17,7 @@ def add_spelling_correction(df, output_folder="../../data/"):
     # Perform spell correction and update the DataFrame
     df["preprocessed_content"] = df["preprocessed_content"].apply(
         lambda text: " ".join(
-            [spell.correction(word) if spell.correction(word) is not None else "" for word in text.split()]
+            [spell.correction(word) for word in text.split() if word is not None]
         )
     )
 

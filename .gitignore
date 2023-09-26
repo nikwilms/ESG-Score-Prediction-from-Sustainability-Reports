@@ -133,9 +133,6 @@ data/*.csv
 data/model_data/*.csv
 models/*.sav
 mlruns
-.DS_Store
-data/mlflow/mflow.db
-
 # models/*
 
 #config file has sensitive data

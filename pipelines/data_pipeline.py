@@ -17,13 +17,13 @@ def data_pipeline():
     df = preprocess_text(df)  # Note that we're directly passing the DataFrame
 
     # Stage 2: Adding spelling correction
-    df = add_spelling_correction(df, output_folder='../data/')  # Note that we're directly passing the DataFrame
+    df["preprocessed_content"] = df["preprocessed_content"].apply(add_spelling_correction)
 
     # Stage 3: Detect ngrams
-    df, bigram_model, trigram_model = detect_ngrams(df) # Assuming detect_ngrams returns DataFrame as first element in a tuple
+    df, _ = detect_ngrams(df)  # Assuming detect_ngrams returns DataFrame as first element in a tuple
 
     # Stage 4: Adding ngrams
-    df["preprocessed_content"] = df["preprocessed_content"].apply(lambda x: add_ngrams(x, bigram_model=bigram_model, trigram_model=trigram_model))
+    df["preprocessed_content"] = df["preprocessed_content"].apply(add_ngrams)
 
     # Stage 5: Save the final dataframe to CSV
     df.to_csv('../data/ready_to_model_data/ready_to_model_df.csv')

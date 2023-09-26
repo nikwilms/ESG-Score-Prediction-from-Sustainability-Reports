@@ -34,17 +34,13 @@ def preprocess_data(df):
     dictionary = corpora.Dictionary(tokenized_data)
 
     # Filter out words that occur less than 10 documents, or more than 50% of the documents
-    # dictionary.filter_extremes(no_below=10, no_above=0.5)
+    dictionary.filter_extremes(no_below=10, no_above=0.5)
 
     # Create the corpus
     corpus = [dictionary.doc2bow(text) for text in tokenized_data]
 
     # Filter out empty documents
     corpus = [doc for doc in corpus if doc]
-
-    print(len(corpus))
-    print(corpus[:5])
-    print(len(dictionary))
 
     return corpus, dictionary, tokenized_data
 
