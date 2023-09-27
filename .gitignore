@@ -135,6 +135,7 @@ models/*.sav
 mlruns
 data/ready_to_model/*.csv
 data/mlflow
+models/ESG_BERT/*
 # models/*
 
 #config file has sensitive data
