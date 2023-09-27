@@ -65,6 +65,10 @@ print(f"Test Score (AUC-ROC): {test_score}")
 # Get the best pipeline
 print(f"Optimized Pipeline: {est.fitted_pipeline_}")
 
+# Get top models in the Pareto front
+pareto_front = est.evaluated_individuals[est.evaluated_individuals['Pareto_Front'] == 1]
+print(f"Top models in the Pareto front: {pareto_front}")
+
 # Optionally, you can save the pipeline to a file
 # with open("optimized_pipeline_classification.py", "w") as f:
 #     f.write(est.export())

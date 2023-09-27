@@ -20,6 +20,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 scorer = make_scorer(mean_squared_error, greater_is_better=False)
 
 # Initialize TPOT2 regressor with K-Fold cross-validation
+# Make sure to adjust the generations and population_size based on your computational resources and needs. 
 est = tpot2.TPOTEstimator(
     generations=5,
     population_size=20,
@@ -42,6 +43,14 @@ print(f"Test Score (Negative MSE): {test_score}")
 
 # Get the best pipeline
 print(f"Optimized Pipeline: {est.fitted_pipeline_}")
+
+# Get top models in the Pareto front
+pareto_front = est.evaluated_individuals[est.evaluated_individuals['Pareto_Front'] == 1]
+print(f"Top models in the Pareto front: {pareto_front}")
+
+# Optionally, you can save the pipeline to a file
+# with open("optimized_pipeline_regression.py", "w") as f:
+#     f.write(est.export())
 
 # Optionally, you can save the pipeline to a file
 # with open("optimized_pipeline_regression.py", "w") as f:
