@@ -49,6 +49,7 @@ def topic_modelling_pipeline(df, trials):
     reduced_embeddings = svd.fit_transform(bert_embeddings)
     reduced_embeddings_df = pd.DataFrame(reduced_embeddings, columns=[f"svd_dim_{i}" for i in range(n_components)], index=df_with_topics.index)
     df_with_topics = pd.concat([df_with_topics, reduced_embeddings_df], axis=1)
+    df_with_topics = df_with_topics[df_with_topics.columns[~df_with_topics.columns.str.isnumeric()]]  # Drop the original embeddings column
 
 # Stage 7 Save the df_with_topics dataframe to CSV
     df_with_topics.to_csv('../data/ready_to_model/df_with_topics.csv')
@@ -60,3 +61,20 @@ def topic_modelling_pipeline(df, trials):
     merge_dataframes(df,ESG_SP500)
 
  
+'''# Drop columns that are not informative for modeling
+cols_to_drop = ['filename', 'ticker', 'year', 'preprocessed_content', 'ner_entities']
+
+# If predicting total ESG score, also drop individual E, S, G scores
+if target == 'total_score':
+    cols_to_drop.extend(['environment_score', 'social_score', 'governance_score'])
+
+# If predicting individual scores, drop the total score
+elif target in ['environment_score', 'social_score', 'governance_score']:
+    cols_to_drop.append('total_score')
+
+# Drop the specified columns
+df_with_topics = df_with_topics.drop(columns=cols_to_drop)
+
+# Define X (features) and y (target)
+X = df_with_topics.drop(columns=target)
+y = df_with_topics[target]'''
