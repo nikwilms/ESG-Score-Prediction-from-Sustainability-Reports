@@ -14,8 +14,7 @@ import mlflow
 # Train the LDA model with 'corpus' but compute coherence using 'tokenized_texts'.
 
 
-# Placeholder function for LDA training
-def train_lda(corpus, id2word, num_topics, alpha, eta):
+def train_lda(corpus, id2word, num_topics, alpha, eta, chunksize=2000, passes=1):
     """
     Train an LDA model on the given corpus.
 
@@ -25,19 +24,21 @@ def train_lda(corpus, id2word, num_topics, alpha, eta):
     - num_topics (int): Number of topics to be extracted from the training corpus.
     - alpha (float): Hyperparameter for LDA model.
     - eta (float): Hyperparameter for LDA model.
+    - chunksize (int): Number of documents to be used in each training chunk.
+    - passes (int): Number of passes through the corpus during training.
 
     Returns:
     - model (LdaMulticore): Trained LDA model.
     """
-
     model = gensim.models.LdaMulticore(
         corpus=corpus,
         id2word=id2word,
         num_topics=num_topics,
         alpha=alpha,
         eta=eta,
+        chunksize=chunksize,
+        passes=passes,
         random_state=100,
-        passes=3,
         dtype=np.float64,
     )
     return model
@@ -110,9 +111,11 @@ def objective(trial, corpus, dictionary, tokenized_texts):
     with mlflow.start_run(run_name=f"Trial_{trial.number}", nested=True) as nested_run:
         alpha = trial.suggest_float("alpha", 0.01, 1)
         eta = trial.suggest_float("eta", 0.01, 1)
-        num_topics = trial.suggest_int("num_topics", 10, 50)
+        num_topics = trial.suggest_int("num_topics", 15, 35)
+        chunksize = trial.suggest_int("chunksize", 1000, 5000)
+        passes = trial.suggest_int("passes", 4, 8)  # Higher values
 
-        model = train_lda(corpus, dictionary, num_topics, alpha, eta)
+        model = train_lda(corpus, dictionary, num_topics, alpha, eta, chunksize, passes)
         coherence_score = compute_coherence(model, tokenized_texts, dictionary)
 
         # Report the coherence score, assuming this is done at step 1 (modify as needed)

@@ -133,7 +133,10 @@ data/*.csv
 data/model_data/*.csv
 models/*.sav
 mlruns
+data/ready_to_model/*.csv
+data/mlflow
 # models/*
 
 #config file has sensitive data
 .mlflow_uri
+**/.DS_Store

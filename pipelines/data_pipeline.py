@@ -26,6 +26,6 @@ def data_pipeline():
     df["preprocessed_content"] = df["preprocessed_content"].apply(add_ngrams)
 
     # Stage 5: Save the final dataframe to CSV
-    df.to_csv('../data/ready_to_model_data/ready_to_model_df.csv')
+    df.to_csv('../data/ready_to_model/ready_to_model_df.csv')
 
     return df
