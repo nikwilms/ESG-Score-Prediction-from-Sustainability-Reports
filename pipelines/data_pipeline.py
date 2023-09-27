@@ -5,10 +5,10 @@ from helpers.ngrams.add_ngrams import add_ngrams
 from helpers.pdf_to_text.remove_unnecessary_context_from_PDF import process_pdfs_in_directory
 import pandas as pd
 
-def data_pipeline():
-    
+def data_pipeline(input_path, output_path='../data/extracted_text_sustainability_reports.csv', n_processes=8):  # Added n_processes with default value of 8
+
     # Stage 0: 
-    process_pdfs_in_directory('/Users/neuefische/Downloads/test_ESG/sample_reports_for_pipeline_test', '../data/extracted_text_sustainability_reports.csv')
+    process_pdfs_in_directory(input_path, '../data/extracted_text_sustainability_reports.csv')
 
     # 0.1 - Read in the CSV and create a DataFrame
     df = pd.read_csv('../data/extracted_text_sustainability_reports.csv')
@@ -17,7 +17,7 @@ def data_pipeline():
     df = preprocess_text(df)  # Note that we're directly passing the DataFrame
 
     # Stage 2: Adding spelling correction
-    df["preprocessed_content"] = df["preprocessed_content"].apply(add_spelling_correction)
+    df = add_spelling_correction(df, output_folder='../data/', n_processes=n_processes)  # Added n_processes
 
     # Stage 3: Detect ngrams
     df, _ = detect_ngrams(df)  # Assuming detect_ngrams returns DataFrame as first element in a tuple
