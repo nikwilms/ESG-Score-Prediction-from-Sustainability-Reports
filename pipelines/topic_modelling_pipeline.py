@@ -22,7 +22,7 @@ def topic_modelling_pipeline(df, trials):
 
 # Stage 3 - run TFIDF and add vectors to dataframe
 
-    tfidf_matrix = create_tfidf(df)
+    tfidf_matrix = create_tfidf(df_with_topics)
     df_with_topics = pd.concat([df_with_topics, tfidf_matrix], axis=1)
 
 # Stage 4 Dimensionality reduction (Truncated SVD) for TFIDF vectors
