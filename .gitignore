@@ -128,16 +128,18 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
 data/*.csv
 data/model_data/*.csv
-models/*.sav
 mlruns
 data/ready_to_model/*.csv
 data/mlflow
-models/ESG_BERT/*
+
 # models/*
+models/*.sav
+models/ESG_BERT/*
+models/automl/tpot2-main
 
 #config file has sensitive data
 .mlflow_uri
 **/.DS_Store
+.DS_Store
