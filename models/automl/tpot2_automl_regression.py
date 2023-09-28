@@ -1,18 +1,36 @@
 from sklearn.model_selection import train_test_split, KFold
 
-# from sklearn.metrics import mean_squared_error, make_scorer
 import tpot2
 import sklearn
 import numpy as np
 import pandas as pd
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/model_data/model_data.csv")
+    df = pd.read_csv("../data/model_data/model_data.csv")
     df_sample = df.sample(100, random_state=100)
 
+    # columns to drop
+    columns_to_drop = [
+        "e_score",
+        "s_score",
+        "g_score",
+        "unnamed: 0",
+        "filename",
+        "ticker",
+        "year",
+        "preprocessed_content",
+        "ner_entities",
+        "company_symbol",
+        "total_score",
+    ]
+
     # Separate features and target
-    X = df.drop(["ESG_Score"], axis=1)
-    y = df["ESG_Score"]
+    y = df["total_score"]
+    X = df.drop(columns=columns_to_drop)
+
+    # drop the last two rows
+    X = X.iloc[:-2, :]
+    y = y.iloc[:-2]
 
     # Split the data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(
@@ -50,7 +68,3 @@ if __name__ == "__main__":
     top_10_mse = filtered_df.nlargest(10, "mean_squared_error")
 
     print(top_10_mse)
-
-    # Optionally, you can save the pipeline to a file
-    # with open("optimized_pipeline_regression.py", "w") as f:
-    #     f.write(est.export())
