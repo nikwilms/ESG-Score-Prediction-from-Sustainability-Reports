@@ -2,6 +2,7 @@ from xgboost import XGBRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score, KFold
 import optuna
+from math import sqrt
 
 
 def tune_xgb_hyperparameters(X_train, y_train, n_trials=100, n_jobs=6):
@@ -19,26 +20,32 @@ def tune_xgb_hyperparameters(X_train, y_train, n_trials=100, n_jobs=6):
 
     def objective(trial):
         params = {
-            "n_estimators": trial.suggest_int("n_estimators", 100, 1000),
-            "max_depth": trial.suggest_int("max_depth", 3, 15),
-            "learning_rate": trial.suggest_float("learning_rate", 0.001, 0.3),
-            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
-            "n_jobs": n_jobs,
+            "objective": "reg:squarederror",
+            "n_estimators": 5000,
+            "verbosity": 0,
+            "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
+            "max_depth": trial.suggest_int("max_depth", 4, 20),
+            "subsample": trial.suggest_float("subsample", 0.05, 1.0),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.05, 1.0),
+            "min_child_weight": trial.suggest_int("min_child_weight", 1, 20),
         }
 
         model = XGBRegressor(**params)
 
-        # Using 5-Fold cross-validation to compute mean squared error
+        # Using 5-Fold cross-validation to compute root mean square error (RMSE)
         kf = KFold(n_splits=5)
-        mse = -cross_val_score(
+        neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
-        ).mean()
+        )
+        rmse = sqrt(-neg_mse.mean())
 
-        return mse
+        return rmse
 
     study = optuna.create_study(direction="minimize")
     study.optimize(objective, n_trials=n_trials)
+
+    print("Best hyperparameters:", study.best_params)
+    print("Best RMSE:", study.best_value)
 
     return study.best_params
 

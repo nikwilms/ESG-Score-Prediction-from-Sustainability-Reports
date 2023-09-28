@@ -25,10 +25,10 @@ def train_and_evaluate_model(X_train, y_train, X_val, y_val, best_params):
     final_model.fit(X_train, y_train)
 
     y_pred = final_model.predict(X_val)
-    mse = mean_squared_error(y_val, y_pred)
+    rmse = mean_squared_error(y_val, y_pred, squared=False)
 
-    print(f"Mean Squared Error: {mse}")
-    return final_model, mse
+    print(f"RMSE: {rmse}")
+    return final_model, rmse
 
 
 # How to use this function:
