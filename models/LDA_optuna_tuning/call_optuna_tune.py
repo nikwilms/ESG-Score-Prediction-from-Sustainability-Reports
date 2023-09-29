@@ -6,6 +6,7 @@ from gensim import corpora
 import logging
 import mlflow
 from optuna.pruners import MedianPruner
+from collections import Counter
 
 
 # import functions
@@ -35,6 +36,18 @@ def preprocess_data(df):
 
     # Tokenize the 'preprocessed_content' column
     tokenized_data = df["preprocessed_content"].apply(lambda x: x.split())
+
+    # Flatten the list and count the frequency of each word
+    all_words = [word for content in tokenized_data for word in content]
+    counter = Counter(all_words)
+
+    # List of least common words that appear less or equals than 2 times
+    least_common_words = {word for word, count in counter.items() if count <= 2}
+
+    # Remove least common words
+    tokenized_data = tokenized_data.apply(
+        lambda x: [word for word in x if word not in least_common_words]
+    )
 
     # Create a Gensim dictionary from the tokenized data
     dictionary = corpora.Dictionary(tokenized_data)

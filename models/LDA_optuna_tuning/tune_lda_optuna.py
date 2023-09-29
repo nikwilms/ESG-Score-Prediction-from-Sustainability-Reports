@@ -111,9 +111,9 @@ def objective(trial, corpus, dictionary, tokenized_texts):
     with mlflow.start_run(run_name=f"Trial_{trial.number}", nested=True) as nested_run:
         alpha = trial.suggest_float("alpha", 0.01, 1)
         eta = trial.suggest_float("eta", 0.01, 1)
-        num_topics = trial.suggest_int("num_topics", 15, 35)
+        num_topics = trial.suggest_int("num_topics", 15, 30)
         chunksize = trial.suggest_int("chunksize", 1000, 5000)
-        passes = trial.suggest_int("passes", 4, 8)  # Higher values
+        passes = trial.suggest_int("passes", 5, 6)
 
         model = train_lda(corpus, dictionary, num_topics, alpha, eta, chunksize, passes)
         coherence_score = compute_coherence(model, tokenized_texts, dictionary)
