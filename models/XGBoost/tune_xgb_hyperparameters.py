@@ -21,7 +21,7 @@ def tune_xgb_hyperparameters(X_train, y_train, n_trials=100, n_jobs=6):
     def objective(trial):
         params = {
             "objective": "reg:squarederror",
-            "n_estimators": 5000,
+            "n_estimators": 1000,
             "verbosity": 0,
             "learning_rate": trial.suggest_float("learning_rate", 1e-3, 0.1, log=True),
             "max_depth": trial.suggest_int("max_depth", 4, 20),
