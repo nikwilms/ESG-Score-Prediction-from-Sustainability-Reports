@@ -14,8 +14,11 @@ import os
 from helpers.topic_modelling.get_embeddings import get_embeddings
 from tensorflow.keras.callbacks import EarlyStopping
 from kerastuner.tuners import RandomSearch
-
-
+from models.LSTM.LSTM_eval import LSTM_eval
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from sklearn.model_selection import KFold
 
 def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding_dim, num_epochs=50, batch_size=32):
     """
@@ -63,60 +66,89 @@ def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding
     bert_embeddings = merged_df.iloc[:, -embedding_dim:].values
     bert_embeddings = np.expand_dims(bert_embeddings, axis=1) 
     
+    print(bert_embeddings.shape)
+
     # Target values.
     y = merged_df[target_column].values
     
-    # Train/test split.
-    X_train, X_test, y_train, y_test = train_test_split(bert_embeddings, y, test_size=0.2, random_state=42)
+    # Scaling the target variable
+    scaler_y = StandardScaler().fit(y.reshape(-1, 1))
+    y_scaled = scaler_y.transform(y.reshape(-1, 1)).flatten()
     
-    run_tuner(X_train, y_train, X_test, y_test, embedding_dim)
+    # Define KFold cross-validator
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    # Define a model-building function for the tuner, taking into account the embedding_dim
-    def build_model(hp):
-        model = Sequential()
-        model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32),
-                       input_shape=(1, embedding_dim), return_sequences=True))
-        model.add(Dropout(rate=hp.Float('dropout_1', min_value=0.1, max_value=0.5, step=0.1)))
-        model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32)))
-        model.add(Dropout(rate=hp.Float('dropout_2', min_value=0.1, max_value=0.5, step=0.1)))
-        model.add(Dense(1))
-        model.compile(optimizer='adam', loss='mean_squared_error')
-        return model
+    # Iterate through the folds
+    for train_index, val_index in kf.split(bert_embeddings):
+        X_train, X_val = bert_embeddings[train_index], bert_embeddings[val_index]
+        y_train, y_val = y_scaled[train_index], y_scaled[val_index]
+
+        X_train = X_train.astype(np.float32)
+        y_train = y_train.astype(np.float32)
+
+
+        # run_tuner(X_train, y_train, X_val, y_val, embedding_dim)  # Adjusted validation set
+
+        # Define a model-building function for the tuner, taking into account the embedding_dim
+        def build_model(hp):
+            model = Sequential()
+            model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32),
+                        input_shape=(1, embedding_dim), return_sequences=True))
+            model.add(Dropout(rate=hp.Float('dropout_1', min_value=0.1, max_value=0.5, step=0.1)))
+            model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32)))
+            model.add(Dropout(rate=hp.Float('dropout_2', min_value=0.1, max_value=0.5, step=0.1)))
+            model.add(Dense(1))
+            model.compile(optimizer='adam', loss='mean_squared_error')
+            return model
+        
+        # Initialize the tuner
+        tuner = RandomSearch(
+                    build_model,
+                    objective='val_loss',
+                    max_trials=5,
+                    executions_per_trial=3,
+                    directory='my_dir',
+                    project_name='helloworld'
+                )
+        
+        stop_early = EarlyStopping(monitor='val_loss', patience=5)
+        #checkpoint = ModelCheckpoint('/Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/LSTM/best_model.h5', monitor='val_loss', save_best_only=True, mode='min')
+        reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, min_lr=1e-5, verbose=1)
+
+        tuner.search(X_train, y_train,
+                     epochs=num_epochs,
+                     validation_data=(X_val, y_val),
+                     callbacks=[stop_early, reduce_lr])
+
+        best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+        #best_hps = run_tuner(X_train, y_train, X_val, y_val, embedding_dim)
+
+        model = tuner.hypermodel.build(best_hps)
     
-    # Initialize the tuner
-    tuner = RandomSearch(
-        build_model,
-        objective='val_loss',
-        max_trials=5,
-        executions_per_trial=3,
-        directory='my_dir',
-        project_name='helloworld'
-    )
+        # Manually save the model after training
+        model_save_path = "Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/LSTM/best_model.h5"  # Replace with your desired path
+        model.save(model_save_path)
 
-    # Define early stopping
-    stop_early = EarlyStopping(monitor='val_loss', patience=5)
+        #model.load_weights('/Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/LSTM/best_model.h5')
 
-    # Start the tuner search
-    tuner.search(X_train, y_train,
-                 epochs=num_epochs,
-                 validation_data=(X_test, y_test),
-                 callbacks=[stop_early])
+        predictions_train = model.predict(X_train)
+        predictions_val = model.predict(X_val)
 
-    # Get the optimal hyperparameters
-    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+        predictions_train = scaler_y.inverse_transform(predictions_train)
+        predictions_val = scaler_y.inverse_transform(predictions_val)
+        y_train_original = scaler_y.inverse_transform(y_train.reshape(-1, 1))
+        y_val_original = scaler_y.inverse_transform(y_val.reshape(-1, 1))
 
-    # Build the model with the optimal hyperparameters and train it on the data
-    model = tuner.hypermodel.build(best_hps)
-    history = model.fit(X_train, y_train, epochs=num_epochs, validation_data=(X_test, y_test), batch_size=batch_size, verbose=1)
+        rmse_train = sqrt(mean_squared_error(y_train_original, predictions_train))
+        rmse_val = sqrt(mean_squared_error(y_val_original, predictions_val))
 
-    # Predictions and Performance Evaluation.
-    predictions_train = model.predict(X_train)
-    predictions_test = model.predict(X_test)
+        #predictions_test = model.predict(X_test)
+        #rmse_test = sqrt(mean_squared_error(y_test, predictions_test))
+
+        print(f"Train RMSE: {rmse_train:.3f}")
+        print(f"Validation RMSE: {rmse_val:.3f}")
+        #print(f"Test RMSE: {rmse_test:.3f}")
+
+        LSTM_eval(model, X_train, y_train, X_val, y_val)
     
-    rmse_train = sqrt(mean_squared_error(y_train, predictions_train))
-    rmse_test = sqrt(mean_squared_error(y_test, predictions_test))
-    
-    print(f"Train RMSE: {rmse_train:.3f}")
-    print(f"Test RMSE: {rmse_test:.3f}")
-    
-    return model, rmse_train, rmse_test
+    return model, rmse_train #, rmse_test
