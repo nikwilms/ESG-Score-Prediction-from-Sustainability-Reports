@@ -3,6 +3,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import cross_val_score, KFold
 import optuna
 from math import sqrt
+import pickle
 
 
 def tune_xgb_hyperparameters(X_train, y_train, n_trials=100, n_jobs=6):
@@ -46,6 +47,9 @@ def tune_xgb_hyperparameters(X_train, y_train, n_trials=100, n_jobs=6):
 
     print("Best hyperparameters:", study.best_params)
     print("Best RMSE:", study.best_value)
+
+    with open("../models/XGBoost/best_params_xgb.pkl", "wb") as f:
+        pickle.dump(study.best_params, f)
 
     return study.best_params
 
