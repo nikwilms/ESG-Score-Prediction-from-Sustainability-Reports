@@ -24,3 +24,8 @@ def run_tuner(X_train, y_train, X_val, y_val, embedding_dim):
     )
 
     tuner.search(X_train, y_train, epochs=50, validation_data=(X_val, y_val))
+    
+    # Get the optimal hyperparameters
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    
+    return best_hps
