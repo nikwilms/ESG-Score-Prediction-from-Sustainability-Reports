@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import numpy as np
 
-path_to_esg_bert = "/Users/nikitawilms/Documents/ffm-ds-23-2/ESG-Score-Prediction-from-Sustainability-Reports/models/ESG_BERT"  # Replace this with the actual path or name of ESG-BERT model
+path_to_esg_bert = "/Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/ESG_BERT"  # Replace this with the actual path or name of ESG-BERT model
 tokenizer = BertTokenizer.from_pretrained(path_to_esg_bert, do_lower_case=True)
 model = BertModel.from_pretrained(path_to_esg_bert)
 model.eval()
