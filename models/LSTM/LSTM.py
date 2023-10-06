@@ -19,6 +19,8 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from sklearn.model_selection import KFold
+import datetime
+from tensorflow.keras.optimizers.legacy import Adam
 
 def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding_dim, num_epochs=50, batch_size=32):
     """
@@ -42,10 +44,8 @@ def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding
     merged_df = pd.merge(ready_to_model_df, df_with_target, left_on=['ticker', 'year'], right_on=['Company_Symbol', 'year'], how='inner')
     merged_df.columns = [col.lower().replace('-', '_') for col in merged_df.columns]
 
-    # Ensure embeddings are not already present in the dataframe to avoid recomputing.
-    if 'esg_bert_embeddings' not in merged_df.columns:
-        # Ensure all entries are strings.
-        merged_df['preprocessed_content'] = merged_df['preprocessed_content'].astype(str)
+    # Ensure all entries are strings.
+    merged_df['preprocessed_content'] = merged_df['preprocessed_content'].astype(str)
 
     # Check for existing embeddings file
     if os.path.exists('../data/model_data/esg_bert_embeddings.csv'):
@@ -53,20 +53,20 @@ def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding
         bert_embeddings = pd.read_csv('../data/model_data/esg_bert_embeddings.csv')
     else:
         # Generate embeddings
-        merged_df['preprocessed_content'] = merged_df['preprocessed_content'].astype(str)
         merged_df['esg_bert_embeddings'] = merged_df['preprocessed_content'].apply(get_embeddings)
         bert_embeddings = pd.DataFrame(merged_df['esg_bert_embeddings'].tolist(), index=merged_df.index)
-        merged_df = pd.concat([merged_df, bert_embeddings], axis=1)
-        merged_df.drop(columns=['esg_bert_embeddings'], inplace=True)
-        
         # Save the BERT embeddings as a CSV file
         bert_embeddings.to_csv('../data/model_data/esg_bert_embeddings.csv', index=False)
-    
+
+    # Assuming embeddings are not already present in merged_df, concatenate them
+    merged_df = pd.concat([merged_df, bert_embeddings], axis=1)
+
+    # Save merged dataframe as CSV file
+    merged_df.to_csv('../data/model_data/merged_df.csv', index=False)
+
     # Assuming the BERT embeddings are in the last `embedding_dim` columns of the dataframe.
     bert_embeddings = merged_df.iloc[:, -embedding_dim:].values
-    bert_embeddings = np.expand_dims(bert_embeddings, axis=1) 
-    
-    print(bert_embeddings.shape)
+    bert_embeddings = np.expand_dims(bert_embeddings, axis=1)
 
     # Target values.
     y = merged_df[target_column].values
@@ -78,6 +78,10 @@ def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding
     # Define KFold cross-validator
     kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
+    # Ensure the directory exists where we save the models
+    model_save_dir = '../data/model_data/'
+    os.makedirs(model_save_dir, exist_ok=True)
+
     # Iterate through the folds
     for train_index, val_index in kf.split(bert_embeddings):
         X_train, X_val = bert_embeddings[train_index], bert_embeddings[val_index]
@@ -86,50 +90,76 @@ def train_lstm_model(ready_to_model_df, df_with_target, target_column, embedding
         X_train = X_train.astype(np.float32)
         y_train = y_train.astype(np.float32)
 
+        # Check: Ensure no overlap between train and validation indices
+        assert len(set(train_index) & set(val_index)) == 0, "Overlap between train and validation indices!"
+        
+        # Check: Ensure that the embeddings and targets are aligned
+        assert X_train.shape[0] == y_train.shape[0], "Mismatch between training features and targets!"
+        assert X_val.shape[0] == y_val.shape[0], "Mismatch between validation features and targets!"
 
         # run_tuner(X_train, y_train, X_val, y_val, embedding_dim)  # Adjusted validation set
 
         # Define a model-building function for the tuner, taking into account the embedding_dim
         def build_model(hp):
             model = Sequential()
-            model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32),
-                        input_shape=(1, embedding_dim), return_sequences=True))
+            model.add(LSTM(units=hp.Int('units_1', min_value=32, max_value=512, step=32),
+                           input_shape=(1, embedding_dim), return_sequences=True))
             model.add(Dropout(rate=hp.Float('dropout_1', min_value=0.1, max_value=0.5, step=0.1)))
-            model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32)))
+            model.add(LSTM(units=hp.Int('units_2', min_value=32, max_value=512, step=32)))
             model.add(Dropout(rate=hp.Float('dropout_2', min_value=0.1, max_value=0.5, step=0.1)))
             model.add(Dense(1))
-            model.compile(optimizer='adam', loss='mean_squared_error')
+            model.compile(optimizer=Adam(learning_rate=hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])),
+                          loss='mean_squared_error')
+            model.summary()  # Print model architecture
             return model
+
         
         # Initialize the tuner
         tuner = RandomSearch(
-                    build_model,
-                    objective='val_loss',
-                    max_trials=5,
-                    executions_per_trial=3,
-                    directory='my_dir',
-                    project_name='helloworld'
-                )
+            build_model,
+            objective='val_loss',
+            max_trials=40,
+            executions_per_trial=3,
+            directory='my_dir',
+            project_name='helloworld'
+        )
+
+        stop_early = EarlyStopping(monitor='val_loss', patience=8)
         
-        stop_early = EarlyStopping(monitor='val_loss', patience=5)
-        #checkpoint = ModelCheckpoint('/Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/LSTM/best_model.h5', monitor='val_loss', save_best_only=True, mode='min')
+        # Append a timestamp to the model filename
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        checkpoint_path = f'{model_save_dir}best_model_{timestamp}.h5'
+
+        checkpoint = ModelCheckpoint(
+            checkpoint_path,
+            monitor='val_loss',
+            save_best_only=True,
+            mode='min',
+            verbose=1
+        )
+
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, min_lr=1e-5, verbose=1)
 
         tuner.search(X_train, y_train,
                      epochs=num_epochs,
                      validation_data=(X_val, y_val),
-                     callbacks=[stop_early, reduce_lr])
+                     callbacks=[stop_early, checkpoint, reduce_lr], verbose=1)
 
         best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-        #best_hps = run_tuner(X_train, y_train, X_val, y_val, embedding_dim)
+
+        # Log or print them to manually verify later
+        print("Best hyperparameters found: ")
+        print("Units 1: ", best_hps.get('units_1'))
+        print("Units 2: ", best_hps.get('units_2'))
+        print("Dropout 1: ", best_hps.get('dropout_1'))
+        print("Dropout 2: ", best_hps.get('dropout_2'))
+        print("Learning Rate: ", best_hps.get('learning_rate'))
 
         model = tuner.hypermodel.build(best_hps)
-    
-        # Manually save the model after training
-        model_save_path = "Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/LSTM/best_model.h5"  # Replace with your desired path
-        model.save(model_save_path)
-
-        #model.load_weights('/Users/neuefische/repos/ESG-Score-Prediction-from-Sustainability-Reports/models/LSTM/best_model.h5')
+        model.summary()  # Print model architecture after reloading
+        weights_path = checkpoint_path
+        assert os.path.exists(weights_path), f"No saved model weights file found at: {weights_path}"
+        model.load_weights(weights_path)
 
         predictions_train = model.predict(X_train)
         predictions_val = model.predict(X_val)
