@@ -1,23 +1,27 @@
-from sklearn.linear_model import Lasso
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import RobustScaler
 import optuna
 import pickle
 from math import sqrt
 
-def tune_lasso_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100):
-    scaler = RobustScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
 
+def tune_gradientboosting_hyperparameters(
+    X_train, y_train, X_test, y_test, n_trials=100
+):
     def objective(trial):
         params = {
-            "alpha": trial.suggest_float("alpha", 1e-4, 1.0, log=True),
-            "max_iter": 10000,
+            "n_estimators": trial.suggest_int("n_estimators", 50, 3000),
+            "learning_rate": trial.suggest_float("learning_rate", 1e-4, 1, log=True),
+            "max_depth": trial.suggest_int("max_depth", 1, 10),
+            "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
+            "max_features": trial.suggest_categorical("max_features", ["auto", "sqrt"]),
+            "loss": "huber",
         }
-        model = Lasso(**params)
-        kf = KFold(n_splits=5, shuffle=True, random_state=1)
+
+        model = GradientBoostingRegressor(**params)
+        kf = KFold(n_splits=5, shuffle=True, random_state=3)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )
@@ -36,7 +40,7 @@ def tune_lasso_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100):
     print("Best hyperparameters:", study.best_params)
     print("Best Test RMSE:", study.best_value)
 
-    with open("../models/Lasso/best_params_lasso.pkl", "wb") as f:
+    with open("../models/GradientBoosting/best_params_gradientboosting.pkl", "wb") as f:
         pickle.dump(study.best_params, f)
 
     return study.best_params

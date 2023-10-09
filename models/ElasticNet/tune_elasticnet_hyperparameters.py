@@ -1,27 +1,25 @@
-from sklearn.linear_model import KernelRidge
+from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import RobustScaler
 import optuna
 import pickle
 from math import sqrt
 
 
-def tune_kernelridge_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100):
-    scaler = MaxAbsScaler()
+def tune_elasticnet_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100):
+    scaler = RobustScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
     def objective(trial):
         params = {
-            "alpha": trial.suggest_float("alpha", 0.1, 1.0),
-            "kernel": trial.suggest_categorical(
-                "kernel", ["linear", "polynomial", "rbf"]
-            ),
-            "degree": trial.suggest_int("degree", 1, 4),
+            "alpha": trial.suggest_float("alpha", 1e-4, 1.0, log=True),
+            "l1_ratio": trial.suggest_float("l1_ratio", 0, 1),
+            "max_iter": 10000,
         }
-        model = KernelRidge(**params)
-        kf = KFold(n_splits=5, shuffle=True, random_state=100)
+        model = ElasticNet(**params)
+        kf = KFold(n_splits=5, shuffle=True, random_state=2)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )
@@ -33,14 +31,14 @@ def tune_kernelridge_hyperparameters(X_train, y_train, X_test, y_test, n_trials=
 
         print(f"Training RMSE: {train_rmse}, Test RMSE: {test_rmse}")
 
-        return test_rmse
+        return test_rmse  # Objective is to minimize test RMSE
 
     study = optuna.create_study(direction="minimize")
     study.optimize(objective, n_trials=n_trials)
     print("Best hyperparameters:", study.best_params)
     print("Best Test RMSE:", study.best_value)
 
-    with open("../models/KernelRidge/best_params_kernelridge.pkl", "wb") as f:
+    with open("../models/ElasticNet/best_params_elasticnet.pkl", "wb") as f:
         pickle.dump(study.best_params, f)
 
     return study.best_params

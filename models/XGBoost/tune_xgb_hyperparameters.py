@@ -34,7 +34,7 @@ def tune_xgb_hyperparameters(X_train, y_train, n_trials=100, n_jobs=6):
         model = XGBRegressor(**params)
 
         # Using 5-Fold cross-validation to compute root mean square error (RMSE)
-        kf = KFold(n_splits=5)
+        kf = KFold(n_splits=5, shuffle=True, random_state=6)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )
