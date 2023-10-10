@@ -19,7 +19,7 @@ def tune_elasticnet_hyperparameters(X_train, y_train, X_test, y_test, n_trials=1
             "max_iter": 10000,
         }
         model = ElasticNet(**params)
-        kf = KFold(n_splits=5, shuffle=True, random_state=2)
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )

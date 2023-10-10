@@ -11,17 +11,19 @@ def tune_gradientboosting_hyperparameters(
 ):
     def objective(trial):
         params = {
-            "n_estimators": trial.suggest_int("n_estimators", 50, 3000),
-            "learning_rate": trial.suggest_float("learning_rate", 1e-4, 1, log=True),
-            "max_depth": trial.suggest_int("max_depth", 1, 10),
-            "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
-            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
-            "max_features": trial.suggest_categorical("max_features", ["auto", "sqrt"]),
+            "n_estimators": trial.suggest_int("n_estimators", 250, 500),
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+            "max_depth": trial.suggest_int("max_depth", 4, 10),
+            "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
+            "max_features": trial.suggest_categorical(
+                "max_features", ["sqrt", "log2", None]
+            ),
             "loss": "huber",
         }
 
         model = GradientBoostingRegressor(**params)
-        kf = KFold(n_splits=5, shuffle=True, random_state=3)
+        kf = KFold(n_splits=3, shuffle=True, random_state=42)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )
@@ -40,7 +42,9 @@ def tune_gradientboosting_hyperparameters(
     print("Best hyperparameters:", study.best_params)
     print("Best Test RMSE:", study.best_value)
 
-    with open("../models/GradientBoosting/best_params_gradientboosting.pkl", "wb") as f:
+    with open(
+        "../models/GradientBoostingReg/best_params_gradientboosting.pkl", "wb"
+    ) as f:
         pickle.dump(study.best_params, f)
 
     return study.best_params

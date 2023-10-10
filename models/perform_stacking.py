@@ -1,49 +1,58 @@
-from sklearn.ensemble import StackingRegressor, BaggingRegressor
-from sklearn.model_selection import train_test_split
+import pickle
+from sklearn.ensemble import BaggingRegressor, StackingRegressor
 from sklearn.metrics import mean_squared_error
-from math import sqrt
-from sklearn.linear_model import Lasso
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import Lasso, Ridge, ElasticNet
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from xgboost import XGBRegressor
+import lightgbm as lgb
+from math import sqrt
 
 
-def perform_stacking(X, y, best_params_lasso, best_params_rf, best_params_xgb):
-    # Split the data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=100
-    )
+def perform_stacking(X_train, y_train, X_test, y_test):
+    # Load pickled models
+    with open("./models/ElasticNet/best_params_elasticnet.pkl", "rb") as f:
+        elastic_net_params = pickle.load(f)
 
-    # Initialize the models with the best hyperparameters
-    lasso = Lasso(**best_params_lasso)
+    with open("./models/GradientBoosting/best_params_gradientboosting.pkl", "rb") as f:
+        gradient_boosting_params = pickle.load(f)
 
-    # Combine default and regularization terms for Random Forest
-    rf_params = {
-        "max_depth": best_params_rf.get("max_depth", None),
-        "min_samples_split": best_params_rf.get("min_samples_split", 2),
-        "min_samples_leaf": best_params_rf.get("min_samples_leaf", 1),
-        **best_params_rf,
-    }
+    with open("./models/LGBM/best_params_lightgbm.pkl", "rb") as f:
+        lgbm_params = pickle.load(f)
 
-    # Combine default and regularization terms for XGBoost
-    xgb_params = {
-        "gamma": best_params_xgb.get("gamma", 0),
-        "reg_alpha": best_params_xgb.get("alpha", 0),
-        "reg_lambda": best_params_xgb.get("lambda", 1),
-        **best_params_xgb,
-    }
+    with open("./models/RandomForest/best_params_rf.pkl", "rb") as f:
+        random_forest_params = pickle.load(f)
 
-    # Initialize the models with the combined parameters
-    rf = RandomForestRegressor(**rf_params)
-    xgb = XGBRegressor(**xgb_params)
+    with open("./models/Ridge/best_params_kernelridge.pkl", "rb") as f:
+        ridge_params = pickle.load(f)
 
-    # Apply bagging to the base models
-    bagging_rf = BaggingRegressor(base_estimator=rf, n_estimators=10, random_state=0)
-    bagging_xgb = BaggingRegressor(base_estimator=xgb, n_estimators=10, random_state=0)
+    with open("./models/XGBoost/best_params_xgb_updated.pkl", "rb") as f:
+        xgboost_params = pickle.load(f)
+
+    with open("./models/Lasso/best_params_lasso.pkl", "rb") as f:
+        lasso_params = pickle.load(f)
+
+    # Initialize base models with loaded parameters
+    base_models = [
+        ("ElasticNet", ElasticNet(**elastic_net_params)),
+        ("GradientBoosting", GradientBoostingRegressor(**gradient_boosting_params)),
+        ("LGBM", lgb.LGBMRegressor(**lgbm_params)),
+        ("RandomForest", RandomForestRegressor(**random_forest_params)),
+        ("Ridge", Ridge(**ridge_params)),
+        ("XGBoost", XGBRegressor(**xgboost_params)),
+    ]
+
+    # Initialize Lasso as the meta-model with loaded parameters
+    lasso = Lasso(**lasso_params)
+
+    # Apply Bagging to the base models
+    bagging_models = [
+        (name, BaggingRegressor(base_estimator=model, n_estimators=10, random_state=42))
+        for name, model in base_models
+    ]
 
     # Perform stacking
     stacking_regressor = StackingRegressor(
-        estimators=[("bagging_rf", bagging_rf), ("bagging_xgb", bagging_xgb)],
-        final_estimator=lasso,
+        estimators=bagging_models, final_estimator=lasso
     )
 
     # Fit the stacking regressor on the training data
@@ -59,10 +68,6 @@ def perform_stacking(X, y, best_params_lasso, best_params_rf, best_params_xgb):
     rmse_train = sqrt(mean_squared_error(y_train, y_pred_train))
     print(f"Root Mean Squared Error (RMSE) for training set: {rmse_train}")
 
-    return stacking_regressor, rmse_test
 
-
-# Usage example
-# best_params_lasso, best_params_rf, and best_params_xgb should be dictionaries containing the best hyperparameters for each model
-# X and y are your feature matrix and target variable
-# stacking_model, test_rmse = perform_stacking(X, y, best_params_lasso, best_params_rf, best_params_xgb)
+# Example usage
+# perform_stacking(X_train, y_train, X_test, y_test)

@@ -10,9 +10,9 @@ def tune_lightgbm_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100
     def objective(trial):
         params = {
             "num_leaves": trial.suggest_int("num_leaves", 2, 256),
-            "max_depth": trial.suggest_int("max_depth", 1, 20),
+            "max_depth": trial.suggest_int("max_depth", 1, 25),
             "learning_rate": trial.suggest_float("learning_rate", 1e-4, 0.3, log=True),
-            "n_estimators": trial.suggest_int("n_estimators", 100, 3000),
+            "n_estimators": 10000,
             "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
             "min_child_weight": trial.suggest_float(
                 "min_child_weight", 1e-5, 1e-1, log=True
@@ -24,10 +24,12 @@ def tune_lightgbm_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100
             "objective": "regression",
             "metric": "rmse",
             "verbosity": -1,
-            "boosting_type": "gbdt",
+            "feature_fraction": trial.suggest_float("feature_fraction", 0.4, 1.0),
+            "bagging_fraction": trial.suggest_float("bagging_fraction", 0.4, 1.0),
+            "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
         }
         model = lgb.LGBMRegressor(**params)
-        kf = KFold(n_splits=5, shuffle=True, random_state=4)
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )

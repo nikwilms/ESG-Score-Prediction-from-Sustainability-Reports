@@ -6,6 +6,7 @@ import optuna
 import pickle
 from math import sqrt
 
+
 def tune_lasso_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100):
     scaler = RobustScaler()
     X_train = scaler.fit_transform(X_train)
@@ -17,7 +18,7 @@ def tune_lasso_hyperparameters(X_train, y_train, X_test, y_test, n_trials=100):
             "max_iter": 10000,
         }
         model = Lasso(**params)
-        kf = KFold(n_splits=5, shuffle=True, random_state=1)
+        kf = KFold(n_splits=5, shuffle=True, random_state=42)
         neg_mse = cross_val_score(
             model, X_train, y_train, cv=kf, scoring="neg_mean_squared_error"
         )
