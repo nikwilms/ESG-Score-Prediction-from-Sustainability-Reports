@@ -12,7 +12,7 @@ def tune_gradientboosting_hyperparameters(
     def objective(trial):
         params = {
             "n_estimators": trial.suggest_int("n_estimators", 250, 500),
-            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.5, log=True),
             "max_depth": trial.suggest_int("max_depth", 4, 10),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 10),
             "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
