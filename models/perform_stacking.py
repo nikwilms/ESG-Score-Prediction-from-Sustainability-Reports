@@ -1,4 +1,5 @@
 import pickle
+import matplotlib.pyplot as plt
 from sklearn.ensemble import BaggingRegressor, StackingRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import Lasso, ElasticNet
@@ -61,6 +62,10 @@ def perform_stacking(X_train, y_train, X_test, y_test):
     # Fit the stacking regressor on the training data
     stacking_regressor.fit(X_train, y_train)
 
+    # Save the model
+    with open("stacking_regressor_model.pkl", "wb") as f:
+        pickle.dump(stacking_regressor, f)
+
     # Evaluate the stacking model on the test set
     y_pred_test = stacking_regressor.predict(X_test)
     rmse_test = sqrt(mean_squared_error(y_test, y_pred_test))
@@ -70,6 +75,20 @@ def perform_stacking(X_train, y_train, X_test, y_test):
     y_pred_train = stacking_regressor.predict(X_train)
     rmse_train = sqrt(mean_squared_error(y_train, y_pred_train))
     print(f"Root Mean Squared Error (RMSE) for training set: {rmse_train}")
+
+    # Save RMSE scores for future reference
+    with open("rmse_scores.pkl", "wb") as f:
+        pickle.dump({"Train": rmse_train, "Test": rmse_test}, f)
+
+    # Plotting RMSE for a non-technical audience
+    plt.figure(figsize=(10, 6))
+    plt.bar(["Train Set", "Test Set"], [rmse_train, rmse_test], color=["blue", "green"])
+    plt.title("Model Performance: RMSE Score")
+    plt.ylabel("RMSE Score")
+    plt.xlabel("Data Set")
+    for i, v in enumerate([rmse_train, rmse_test]):
+        plt.text(i, v + 0.01, str(round(v, 2)), ha="center")
+    plt.show()
 
 
 # Example usage
