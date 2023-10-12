@@ -138,3 +138,7 @@ mlruns
 #config file has sensitive data
 .mlflow_uri.DS_Store
 data/mlflow/mlflow.db
+
+# Model data
+*.csv
+*.pkl
