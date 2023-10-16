@@ -23,6 +23,7 @@ Our mission is to make ESG performance transparent and actionable. Upload a sust
 * Dimensionality Reduction
 * Ensemble Learning
 * Regression Models: XGBoost, LGBM, Random Forest, Gradient Boosting, Lasso, Ridge
+* Google Colab
 
 ## Why This Project Matters
 Success means delivering a machine learning model that not only predicts ESG scores accurately but also offers interpretability.
