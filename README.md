@@ -1,41 +1,44 @@
-# ESG Score Prediction using Sustainability Reports
-This repository contains code and data to train and evaluate a machine learning model to predict ESG scores from sustainability reports. The model is trained on a dataset of sustainability reports and ESG scores from a variety of companies. It can be used to predict ESG scores for new companies or to update ESG scores for existing companies.
-
+# SustainSight: Revolutionizing ESG Score Prediction with NLP
+Welcome to SustainSight, your go-to NLP-powered tool for assessing a company's adherence to Environmental, Social, and Governance (ESG) principles. With cutting-edge technologies like BERT and custom-trained models, we provide immediate and accurate ESG score predictions based on your uploaded sustainability reports.
 This repository is useful for researchers, investors, and sustainability professionals who are interested in developing or using machine learning models to predict ESG scores.
 
-#### -- Project Status: In Progress
+#### -- Project Status: FINISHED
 
-## Team
+## The Innovators
 [Marius Bosch](https://www.linkedin.com/in/marius-bosch-435158126/), [Selchuk Hadzhaahmed](https://www.linkedin.com/in/selchuk-hadzhaahmed-804379100/),
 [Nikita Wilms](https://www.linkedin.com/in/nikita-wilms/)
 
-## Project Objective
-Disclose their ESG performance in a transparent and comprehensive way. The ESG score prediction model can be used to ensure that the ESG report is accurate and complete. It can also be used to identify areas where the company needs to provide more information about its ESG performance.
+## Elevating ESG Transparency
+Our mission is to make ESG performance transparent and actionable. Upload a sustainability report and receive a detailed ESG score, pinpointing areas for improvement or validation.
 
-### Methods Used
-* Scraping the data
-* Text preprocessing
-* Feature engineering
-* Data Visualization
-* Exploratory Data Analysis
-* Natural language processing (NLP)
+### Tech Stack & Techniques
+* Web Scraping via Selenium
+* Text Preprocessing
+* Feature Engineering
+* NLP (Natural Language Processing)
+* N-Gram Analysis
+* BERT Transformation
+* LDA & TF-IDF
+* LSTM Networks
+* Dimensionality Reduction
+* Ensemble Learning
+* Regression Models: XGBoost, LGBM, Random Forest, Gradient Boosting, Lasso, Ridge
 
-## Project Overview
-The project will be successful if it is able to develop a machine learning model that can accurately predict ESG scores from sustainability reports. The model should also be interpretable, so that users can understand how the model makes its predictions.
+## Why This Project Matters
+Success means delivering a machine learning model that not only predicts ESG scores accurately but also offers interpretability.
 
-## Data Sources
+## Where the Data Comes From
 * [Yahoo API for ESG scores](https://pypi.org/project/yesg/): This module provides access to ESG scores for a variety of companies.
 * [www.responsibilityreports.com](www.responsibilityreports.com) for ESG company reports: This website provides access to ESG company reports.
 
-## Questions
-* What are the most important factors that influence a company's ESG score?
-* Can we identify a set of common features in the sustainability reports of companies with high ESG scores?
-* Can we use NLP to extract insights from the text data in sustainability reports that may be predictive of ESG scores?
-* Can we develop a machine learning model that can accurately predict ESG scores for new companies or for companies that have not yet published a sustainability report?
-* How can we make the machine learning model more interpretable so that users can understand how it makes its predictions?
+## Key Questions
+* What dictates a company's ESG score?
+* Can we identify hallmark features in high-ESG-score reports?
+* How can NLP extract predictive insights from text?
+* How do we make the model interpretable?
 
-## Blockers and Challenges
-It is important to be able to interpret the machine learning model so that you can understand how it makes its predictions. This is especially important for ESG scores, as it is important to be able to explain to users why the model predicted a particular score.
+## Challenges We Overcame
+Interpretability is crucial. Especially for ESG scores, it's vital that users understand why a particular score was predicted.
 
 ## Requirements:
 
@@ -57,6 +60,6 @@ pip install --upgrade pip
 pip install -r requirements_dev.txt
 ```
 
-The `requirements.txt` file contains the libraries needed for deployment.. of model or dashboard .. thus no jupyter or other libs used during development.
+The `requirements.txt` file contains the libraries needed for deployment.
 
 
