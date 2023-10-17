@@ -1,5 +1,6 @@
-# SustainSight: Revolutionizing ESG Score Prediction with NLP
-Welcome to SustainSight, your go-to NLP-powered tool for assessing a company's adherence to Environmental, Social, and Governance (ESG) principles. With cutting-edge technologies like BERT and custom-trained models, we provide immediate and accurate ESG score predictions based on your uploaded sustainability reports.
+# SustainSight: NLP-Driven ESG Score Prediction
+Welcome to SustainSight, your premier NLP-based tool for assessing a company's commitment to Environmental, Social, and Governance (ESG) principles. Leveraging state-of-the-art models like BERT and our custom-trained algorithms, we provide insightful ESG score predictions based on your uploaded sustainability reports.
+
 This repository is useful for researchers, investors, and sustainability professionals who are interested in developing or using machine learning models to predict ESG scores.
 
 #### -- Project Status: FINISHED
@@ -8,8 +9,8 @@ This repository is useful for researchers, investors, and sustainability profess
 [Marius Bosch](https://www.linkedin.com/in/marius-bosch-435158126/), [Selchuk Hadzhaahmed](https://www.linkedin.com/in/selchuk-hadzhaahmed-804379100/),
 [Nikita Wilms](https://www.linkedin.com/in/nikita-wilms/)
 
-## Elevating ESG Transparency
-Our mission is to make ESG performance transparent and actionable. Upload a sustainability report and receive a detailed ESG score, pinpointing areas for improvement or validation.
+## Why SustainSight?
+Our tool is tailored for researchers, investors, and sustainability professionals who need a reliable, machine learning-driven method to predict ESG scores.
 
 ### Tech Stack & Techniques
 * Web Scraping via Selenium
@@ -25,21 +26,21 @@ Our mission is to make ESG performance transparent and actionable. Upload a sust
 * Regression Models: XGBoost, LGBM, Random Forest, Gradient Boosting, Lasso, Ridge
 * Google Colab
 
-## Why This Project Matters
-Success means delivering a machine learning model that not only predicts ESG scores accurately but also offers interpretability.
+## Project Outcome
+The final ensemble model predicts ESG scores with an impressive accuracy, deviating by an average range of only 8.5% from actual ESG ratings.
+
+## Future Work: Enhancing Transparency
+We aim to incorporate features that make ESG performance transparent and actionable, providing not just scores but also insights into areas for improvement or validation.
 
 ## Where the Data Comes From
 * [Yahoo API for ESG scores](https://pypi.org/project/yesg/): This module provides access to ESG scores for a variety of companies.
 * [www.responsibilityreports.com](www.responsibilityreports.com) for ESG company reports: This website provides access to ESG company reports.
 
-## Key Questions
-* What dictates a company's ESG score?
-* Can we identify hallmark features in high-ESG-score reports?
-* How can NLP extract predictive insights from text?
-* How do we make the model interpretable?
-
-## Challenges We Overcame
-Interpretability is crucial. Especially for ESG scores, it's vital that users understand why a particular score was predicted.
+## Key Questions Addressed
+* What are the underlying factors of a company's ESG score?
+* Can we pinpoint features common among high-scoring sustainability reports?
+* How does NLP contribute to predictive accuracy?
+* How can the model be enhanced for better interpretability?
 
 ## Requirements:
 
